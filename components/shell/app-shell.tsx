@@ -52,7 +52,7 @@ const STUDENT_NAV: NavItem[] = [
 ];
 
 const STAFF_NAV: NavItem[] = [
-  { href: "/counselor", label: "Review queue", icon: Inbox, group: "Counselling" },
+  { href: "/counselor", label: "Counsellor dashboard", icon: Inbox, group: "Counselling" },
   { href: "/admissions", label: "How admissions works", icon: Compass, group: "Explore" },
   { href: "/practice", label: "SAT Practice", icon: ListChecks, group: "Explore" },
   { href: "/universities", label: "Universities", icon: Building2, group: "Explore" },
@@ -85,7 +85,7 @@ const LABELS: Record<string, string> = {
   activities: "Activities",
   recommenders: "Recommendations",
   universities: "Universities",
-  counselor: "Review queue",
+  counselor: "Counsellor dashboard",
   admin: "Content & users",
   meeting: "Meeting view",
 };
