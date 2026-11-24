@@ -1,5 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL, FALLBACK, TUTOR_DAILY_LIMIT, TUTOR_SYSTEM, aiConfigured, anthropic } from "@/lib/ai";
+import { ApiError, ThinkingLevel } from "@google/genai";
+import { AI_MODEL, TUTOR_DAILY_LIMIT, TUTOR_SYSTEM, aiConfigured, gemini, toContents, type ChatTurn } from "@/lib/ai";
 import { createClient } from "@/lib/supabase/server";
 import type { Choice } from "@/lib/sat";
 
@@ -77,51 +77,53 @@ export async function POST(request: Request) {
 
   await supabase.from("tutor_messages").insert({ user_id: user.id, question_id: questionId ?? null, role: "user", content: text });
 
-  const messages: Anthropic.Beta.BetaMessageParam[] = [];
+  const turns: ChatTurn[] = [];
   if (context) {
-    // The question block is identical on every follow-up about this question, so it is cached.
-    messages.push({ role: "user", content: [{ type: "text", text: context, cache_control: { type: "ephemeral" } }] });
-    messages.push({ role: "assistant", content: "I have the question, answer key and explanation. What would you like to know?" });
+    // The question block comes first and is identical on every follow-up, so Gemini can cache it.
+    turns.push({ role: "user", content: context });
+    turns.push({ role: "assistant", content: "I have the question, answer key and explanation. What would you like to know?" });
   }
-  for (const m of (history ?? []).reverse()) messages.push({ role: m.role as "user" | "assistant", content: m.content });
-  messages.push({ role: "user", content: text });
-
-  const stream = anthropic().beta.messages.stream({
-    model: AI_MODEL,
-    max_tokens: 8000,
-    system: [{ type: "text", text: TUTOR_SYSTEM, cache_control: { type: "ephemeral" } }],
-    output_config: { effort: "medium" },
-    messages,
-    ...FALLBACK,
-    betas: [...FALLBACK.betas],
-  });
+  for (const m of (history ?? []).reverse()) turns.push({ role: m.role as ChatTurn["role"], content: m.content });
+  turns.push({ role: "user", content: text });
 
   const encoder = new TextEncoder();
   const body = new ReadableStream({
     async start(controller) {
       let reply = "";
-      stream.on("text", (delta) => {
-        reply += delta;
-        controller.enqueue(encoder.encode(delta));
-      });
+      let usage: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number } | undefined;
       try {
-        const final = await stream.finalMessage();
-        if (final.stop_reason === "refusal") {
-          const note = "\n\nI can't help with that one. Try asking about the question itself.";
-          reply += note;
-          controller.enqueue(encoder.encode(note));
+        const stream = await gemini().models.generateContentStream({
+          model: AI_MODEL,
+          contents: toContents(turns),
+          config: {
+            systemInstruction: TUTOR_SYSTEM,
+            maxOutputTokens: 8000,
+            thinkingConfig: { thinkingLevel: ThinkingLevel.MEDIUM },
+          },
+        });
+        for await (const chunk of stream) {
+          const delta = chunk.text;
+          if (delta) {
+            reply += delta;
+            controller.enqueue(encoder.encode(delta));
+          }
+          if (chunk.usageMetadata) usage = chunk.usageMetadata;
+        }
+        if (!reply) {
+          reply = "I can't help with that one. Try asking about the question itself.";
+          controller.enqueue(encoder.encode(reply));
         }
         await supabase.from("tutor_messages").insert({
           user_id: user.id,
           question_id: questionId ?? null,
           role: "assistant",
           content: reply,
-          input_tokens: final.usage.input_tokens + (final.usage.cache_read_input_tokens ?? 0),
-          output_tokens: final.usage.output_tokens,
+          input_tokens: usage?.promptTokenCount ?? null,
+          output_tokens: (usage?.candidatesTokenCount ?? 0) + (usage?.thoughtsTokenCount ?? 0),
         });
       } catch (error) {
         const note =
-          error instanceof Anthropic.RateLimitError
+          error instanceof ApiError && error.status === 429
             ? "\n\nThe tutor is busy right now. Try again in a minute."
             : "\n\nSomething went wrong reaching the tutor. Try again.";
         controller.enqueue(encoder.encode(note));

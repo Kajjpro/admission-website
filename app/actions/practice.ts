@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod/v4";
-import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
-import { AI_MODEL, FALLBACK, aiConfigured, anthropic } from "@/lib/ai";
+import { aiConfigured, generateJson } from "@/lib/ai";
 import { authedClient } from "@/lib/auth";
 import { SAT_TAXONOMY, sectionOfDomain, type Choice, type Difficulty, type GradedResult } from "@/lib/sat";
 
@@ -79,7 +78,7 @@ export async function generateQuestions(input: { skill: string; domain: string; 
   const { supabase, userId } = await authedClient();
   const { data: me } = await supabase.from("profiles").select("role").eq("id", userId).single();
   if (me?.role === "student") return { error: "Only counselors and admins can generate questions." };
-  if (!aiConfigured()) return { error: "ANTHROPIC_API_KEY is not set." };
+  if (!aiConfigured()) return { error: "GEMINI_API_KEY is not set." };
 
   const section = sectionOfDomain(input.domain);
   if (!section || !SAT_TAXONOMY[section].domains[input.domain]?.includes(input.skill)) return { error: "Unknown skill." };
@@ -93,17 +92,9 @@ export async function generateQuestions(input: { skill: string; domain: string; 
     .limit(2);
   const { data: existing } = await supabase.from("sat_questions").select("stem").eq("skill", input.skill).limit(40);
 
-  const client = anthropic();
-  const generated = await client.beta.messages.parse({
-    model: AI_MODEL,
-    max_tokens: 16000,
-    output_config: { effort: "high", format: betaZodOutputFormat(GeneratedSet) },
-    ...FALLBACK,
-    betas: [...FALLBACK.betas],
-    messages: [
-      {
-        role: "user",
-        content: `Write ${count} new, original Digital SAT practice questions.
+  const generated = await generateJson(
+    GeneratedSet,
+    `Write ${count} new, original Digital SAT practice questions.
 
 Section: ${SAT_TAXONOMY[section].label}
 Domain: ${input.domain}
@@ -119,11 +110,9 @@ Requirements:
 
 Style reference from our bank (do not copy):
 ${JSON.stringify(examples ?? [], null, 1).slice(0, 6000)}`,
-      },
-    ],
-  });
+  );
 
-  const candidates = generated.parsed_output?.questions ?? [];
+  const candidates = generated?.questions ?? [];
   if (!candidates.length) return { error: "The model didn't return any questions. Try again." };
 
   const checks = await Promise.all(
@@ -136,15 +125,10 @@ ${JSON.stringify(examples ?? [], null, 1).slice(0, 6000)}`,
         .filter(Boolean)
         .join("\n\n");
       try {
-        const res = await client.beta.messages.parse({
-          model: AI_MODEL,
-          max_tokens: 8000,
-          output_config: { effort: "high", format: betaZodOutputFormat(Verification) },
-          ...FALLBACK,
-          betas: [...FALLBACK.betas],
-          messages: [{ role: "user", content: `Solve this SAT question independently and carefully. Then judge whether it has exactly one correct answer.\n\n${shown}` }],
-        });
-        const v = res.parsed_output;
+        const v = await generateJson(
+          Verification,
+          `Solve this SAT question independently and carefully. Then judge whether it has exactly one correct answer.\n\n${shown}`,
+        );
         const keys = [q.correct_answer, ...q.accepted_answers].map(normalize);
         const ok =
           v !== null &&

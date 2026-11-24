@@ -35,7 +35,7 @@ export default async function TutorPage() {
             ]}
           />
         ) : (
-          <p className="text-sm text-slate-500">The AI tutor isn't set up yet. An admin needs to add an Anthropic API key.</p>
+          <p className="text-sm text-slate-500">The AI tutor isn't set up yet. An admin needs to add a Gemini API key.</p>
         )}
       </Card>
     </div>
