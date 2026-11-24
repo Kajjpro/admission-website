@@ -3,6 +3,7 @@ import { Card, CardHeader } from "@/components/ui";
 
 const LINKS = [
   { href: "https://satsuitequestionbank.collegeboard.org/", title: "College Board Question Bank", note: "Official questions, filter by skill and difficulty" },
+  { href: "https://satquestionbank.org/", title: "SATQuestionBank.org", note: "The official questions with a timer, Desmos and answer checking" },
   { href: "https://bluebook.collegeboard.org/", title: "Bluebook practice tests", note: "Full-length adaptive tests in the real testing app" },
   { href: "https://www.khanacademy.org/digital-sat", title: "Khan Academy Digital SAT", note: "Official free course with College Board" },
   { href: "https://satsuite.collegeboard.org/practice", title: "All official practice", note: "Practice tests, answer explanations, score guides" },
