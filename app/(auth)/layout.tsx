@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Check, GraduationCap } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -15,8 +15,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       <div className="relative hidden overflow-hidden bg-navy text-white lg:flex lg:flex-col lg:justify-between lg:p-14">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:22px_22px]" />
-        <div className="pointer-events-none absolute -bottom-32 -right-24 size-[28rem] rounded-full bg-accent/40 blur-3xl" />
         <p className="relative text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">Grades 9–12</p>
         <div className="relative">
           <h2 className="max-w-md font-serif text-5xl font-medium leading-[1.08]">Be the student the admissions team is missing.</h2>
@@ -27,10 +25,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               "Essay feedback from your counsellor, in one place",
               "Real acceptance rates and SAT ranges for 1,464 universities",
             ].map((t) => (
-              <li key={t} className="flex items-start gap-2.5">
-                <Check className="mt-0.5 size-4 shrink-0 text-emerald-400" />
-                {t}
-              </li>
+              <li key={t} className="border-l border-white/20 pl-3">{t}</li>
             ))}
           </ul>
         </div>

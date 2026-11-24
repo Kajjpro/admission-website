@@ -77,8 +77,8 @@ export default async function DashboardPage() {
 
       <TodayCard stats={practice} goal={profile.daily_goal} />
 
-      <Link href="/admissions" className="group flex items-center gap-4 rounded-lg border border-indigo-200 bg-gradient-to-r from-indigo-50 to-white p-5 transition-colors hover:border-accent">
-        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-accent ring-1 ring-indigo-200">
+      <Link href="/admissions" className="group flex items-center gap-4 rounded-lg border border-line bg-white p-5 transition-colors hover:border-accent">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
           <Compass className="size-5" />
         </span>
         <div className="min-w-0 flex-1">

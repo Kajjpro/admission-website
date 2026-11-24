@@ -3,7 +3,6 @@ import {
   ArrowRight,
   BookOpen,
   Building2,
-  Check,
   Flame,
   GraduationCap,
   LayoutDashboard,
@@ -58,11 +57,9 @@ export default function Home() {
       </header>
 
       <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(var(--color-line)_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_at_top,black_40%,transparent_75%)]" />
         <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 pb-20 pt-16 lg:grid-cols-[1.05fr_1fr] lg:pt-24">
           <Reveal>
             <p className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1 text-xs font-medium text-slate-600">
-              <span className="size-1.5 rounded-full bg-emerald-500" />
               Fall 2027 deadlines are live
             </p>
             <h1 className="mt-6 font-serif text-5xl font-medium leading-[1.05] tracking-tight md:text-7xl">
@@ -80,9 +77,9 @@ export default function Home() {
                 I have an account
               </Link>
             </div>
-            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
+            <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
               {["Free for students", "Built for international applicants", "Works with your school counsellor"].map((t) => (
-                <li key={t} className="flex items-center gap-1.5"><Check className="size-4 text-emerald-600" />{t}</li>
+                <li key={t}>{t}</li>
               ))}
             </ul>
           </Reveal>
@@ -146,7 +143,6 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-5 py-24">
         <Reveal>
           <div className="relative overflow-hidden rounded-2xl bg-navy px-8 py-14 text-white md:px-14">
-            <div className="pointer-events-none absolute -right-20 -top-20 size-72 rounded-full bg-accent/30 blur-3xl" />
             <h2 className="relative max-w-2xl font-serif text-4xl font-medium leading-tight md:text-5xl">The best time to start was Grade 9. The second best is today.</h2>
             <Link href="/signup" className="group relative mt-8 inline-flex h-12 items-center gap-2 rounded-md bg-white px-6 text-sm font-semibold text-navy hover:bg-slate-100">
               Create your free account
@@ -170,7 +166,6 @@ export default function Home() {
 function ProductPreview() {
   return (
     <div className="relative">
-      <div className="absolute -inset-6 -z-10 rounded-3xl bg-gradient-to-br from-indigo-100/70 via-transparent to-sky-100/60 blur-2xl" />
       <div className="rounded-xl border border-line bg-white p-5 shadow-[0_24px_60px_-24px_rgba(15,23,42,0.25)]">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold">Today</p>
