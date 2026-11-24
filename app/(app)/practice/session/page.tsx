@@ -3,6 +3,7 @@ import { aiConfigured } from "@/lib/ai";
 import { getPracticeStats } from "@/lib/practice";
 import { PUBLIC_QUESTION_COLUMNS, toPublicQuestion, type PublicQuestion } from "@/lib/sat";
 import { createClient } from "@/lib/supabase/server";
+import { fetchAll } from "@/lib/fetch-all";
 import { QuestionPlayer } from "@/components/practice/question-player";
 import type { TutorMessage } from "@/components/practice/tutor-chat";
 
@@ -43,11 +44,11 @@ export default async function SessionPage({ searchParams }: { searchParams: Prom
     if (params.skill) query = query.eq("skill", params.skill);
     if (params.difficulty) query = query.eq("difficulty", params.difficulty);
 
-    const [{ data: pool }, { data: attempted }] = await Promise.all([
-      query.limit(2000),
-      supabase.from("sat_attempts").select("question_id").eq("user_id", profile.id).limit(10000),
+    const [{ data: pool }, attempted] = await Promise.all([
+      query.limit(1000),
+      fetchAll<{ question_id: string }>((from, to) => supabase.from("sat_attempts").select("question_id").eq("user_id", profile.id).order("id").range(from, to)),
     ]);
-    const seen = new Set((attempted ?? []).map((a) => a.question_id));
+    const seen = new Set(attempted.map((a) => a.question_id));
     const fresh = shuffle((pool ?? []).filter((q) => !seen.has(q.id)));
     const old = shuffle((pool ?? []).filter((q) => seen.has(q.id)));
 

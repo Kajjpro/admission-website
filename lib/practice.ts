@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchAll } from "./fetch-all";
 import { locateSkill } from "./sat";
 
 export interface PracticeStats {
@@ -18,30 +19,36 @@ function localDay(d: Date) {
 
 export async function getPracticeStats(supabase: SupabaseClient, userId: string): Promise<PracticeStats> {
   const since = new Date(Date.now() - 365 * 86_400_000).toISOString();
-  const [{ data: attempts }, { count: dueReviews }, { data: logs }] = await Promise.all([
-    supabase
-      .from("sat_attempts")
-      .select("is_correct, created_at, question:sat_questions(section, domain, skill)")
-      .eq("user_id", userId)
-      .gte("created_at", since)
-      .order("created_at", { ascending: false })
-      .limit(5000),
+  const [attempts, { count: dueReviews }, logs] = await Promise.all([
+    fetchAll((from, to) =>
+      supabase
+        .from("sat_attempts")
+        .select("is_correct, created_at, question:sat_questions(section, domain, skill)")
+        .eq("user_id", userId)
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .order("id")
+        .range(from, to),
+    ),
     supabase
       .from("sat_reviews")
       .select("question_id", { count: "exact", head: true })
       .eq("user_id", userId)
       .lte("due_on", localDay(new Date())),
-    supabase
-      .from("official_practice_logs")
-      .select("skill, attempted, correct, logged_on")
-      .eq("user_id", userId)
-      .gte("logged_on", since.slice(0, 10))
-      .limit(5000),
+    fetchAll((from, to) =>
+      supabase
+        .from("official_practice_logs")
+        .select("skill, attempted, correct, logged_on")
+        .eq("user_id", userId)
+        .gte("logged_on", since.slice(0, 10))
+        .order("id")
+        .range(from, to),
+    ),
   ]);
-  const official = (logs ?? []) as { skill: string | null; attempted: number; correct: number; logged_on: string }[];
+  const official = logs as unknown as { skill: string | null; attempted: number; correct: number; logged_on: string }[];
 
   type Row = { is_correct: boolean; created_at: string; question: { section: string; domain: string; skill: string } | null };
-  const rows = (attempts ?? []) as unknown as Row[];
+  const rows = attempts as unknown as Row[];
   const todayKey = localDay(new Date());
   const days = new Set([...rows.map((r) => localDay(new Date(r.created_at))), ...official.map((l) => l.logged_on)]);
 

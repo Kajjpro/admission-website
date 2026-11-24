@@ -9,6 +9,7 @@ import { SourceBadge } from "@/components/source-badge";
 import type { Guide, Profile, RoadmapTask, University } from "@/lib/types";
 import { DeleteButton, InviteForm, ResultForm, QuestionGenerator, QuestionImporter, TaskForm, UserRow } from "./admin-client";
 import { SAT_TAXONOMY, type Section } from "@/lib/sat";
+import { fetchAll } from "@/lib/fetch-all";
 import { deleteGuide, deleteResult, deleteTask, removeInvite } from "@/app/actions/admin";
 
 export const metadata = { title: "Content & users" };
@@ -158,7 +159,9 @@ async function UsersTab({ supabase }: { supabase: Client }) {
 }
 
 async function QuestionsTab({ supabase }: { supabase: Client }) {
-  const { data } = await supabase.from("sat_questions").select("skill, source, verified").limit(10000);
+  const data = await fetchAll<{ skill: string; source: string; verified: boolean }>((from, to) =>
+    supabase.from("sat_questions").select("skill, source, verified").order("id").range(from, to),
+  );
   const counts = new Map<string, number>();
   for (const q of data ?? []) counts.set(q.skill, (counts.get(q.skill) ?? 0) + 1);
   const skills = (Object.keys(SAT_TAXONOMY) as Section[]).flatMap((section) =>
@@ -191,9 +194,9 @@ async function QuestionsTab({ supabase }: { supabase: Client }) {
 }
 
 async function ResultsTab({ supabase }: { supabase: Client }) {
-  const [{ data: results }, { data: unis }] = await Promise.all([
+  const [{ data: results }, unis] = await Promise.all([
     supabase.from("admission_results").select("*").order("created_at", { ascending: false }),
-    supabase.from("universities").select("name").order("name").limit(3000),
+    fetchAll<{ name: string }>((from, to) => supabase.from("universities").select("name").order("name").order("id").range(from, to)),
   ]);
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
@@ -207,7 +210,7 @@ async function ResultsTab({ supabase }: { supabase: Client }) {
         ))}
         {!results?.length && <p className="px-5 py-6 text-sm text-slate-500">No results yet. Admits you add appear at the top of the Universities page.</p>}
       </Card>
-      <ResultForm universities={(unis ?? []).map((u) => u.name)} />
+      <ResultForm universities={unis.map((u) => u.name)} />
     </div>
   );
 }

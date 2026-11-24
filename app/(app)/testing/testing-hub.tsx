@@ -187,14 +187,14 @@ function ScoreChart({ scores, type, target }: { scores: TestScore[]; type: TestT
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Score trend">
       {target && (
         <>
-          <line x1={P} x2={W - P} y1={y(target)} y2={y(target)} stroke="#0f172a" strokeDasharray="4 4" strokeOpacity={0.3} />
+          <line x1={P} x2={W - P} y1={y(target)} y2={y(target)} stroke="var(--color-navy)" strokeDasharray="4 4" strokeOpacity={0.3} />
           <text x={W - P} y={y(target) - 6} textAnchor="end" className="fill-slate-500 text-[10px]">Target {target}</text>
         </>
       )}
-      <path d={path} fill="none" stroke="#4f46e5" strokeWidth={2} strokeLinejoin="round" />
+      <path d={path} fill="none" stroke="var(--color-accent)" strokeWidth={2} strokeLinejoin="round" />
       {scores.map((s, i) => (
         <g key={s.id}>
-          <circle cx={x(i)} cy={y(values[i]!)} r={4} fill={s.is_official ? "#4f46e5" : "#fff"} stroke="#4f46e5" strokeWidth={2} />
+          <circle cx={x(i)} cy={y(values[i]!)} r={4} fill={s.is_official ? "var(--color-accent)" : "var(--color-white)"} stroke="var(--color-accent)" strokeWidth={2} />
           <text x={x(i)} y={y(values[i]!) - 10} textAnchor="middle" className="fill-slate-700 text-[10px] font-medium">{values[i]}</text>
           <text x={x(i)} y={H - 8} textAnchor="middle" className="fill-slate-400 text-[10px]">{formatDate(s.test_date, { year: "2-digit", day: undefined })}</text>
         </g>

@@ -27,6 +27,7 @@ import { setGradeView, signOut } from "@/app/actions/profile";
 import { GRADES } from "@/lib/constants";
 import { cn, initials } from "@/lib/utils";
 import type { Profile, Role } from "@/lib/types";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { CommandMenu } from "./command-menu";
 
 export interface NavItem {
@@ -199,6 +200,7 @@ export function AppShell({
           <Breadcrumbs pathname={pathname} />
           <div className="ml-auto flex items-center gap-2">
             {profile.role !== "counselor" && <GradeSelect value={gradeView} />}
+            <ThemeToggle />
             <button
               onClick={() => setPaletteOpen(true)}
               className="flex h-8 items-center gap-2 rounded-md border border-line bg-white px-2.5 text-xs text-slate-500 hover:text-navy"

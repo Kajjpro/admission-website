@@ -12,12 +12,71 @@
   --color-accent-soft: #eef2ff;
 }
 
+/* Dark mode: remap the palette tokens every utility reads, so all pages switch together. */
+.dark {
+  color-scheme: dark;
+  --color-white: #15171c;
+  --color-canvas: #0c0d10;
+  --color-line: #2a2d35;
+  --color-navy: #eceef3;
+  --color-accent: #8b93ff;
+  --color-accent-soft: #1d2042;
+
+  --color-slate-50: #1b1e24;
+  --color-slate-100: #22252c;
+  --color-slate-200: #2e323a;
+  --color-slate-300: #444954;
+  --color-slate-400: #6c727e;
+  --color-slate-500: #8c929d;
+  --color-slate-600: #a9aeb8;
+  --color-slate-700: #c5c9d1;
+  --color-slate-800: #dcdfe5;
+  --color-slate-900: #eceef2;
+  --color-slate-950: #f6f7f9;
+
+  --color-indigo-50: #1b1e3d;
+  --color-indigo-100: #23274d;
+  --color-indigo-200: #30356a;
+  --color-indigo-300: #4c53a3;
+  --color-indigo-700: #aab4ff;
+  --color-indigo-800: #c9d0ff;
+  --color-indigo-950: #e6e9ff;
+
+  --color-emerald-50: #0e261d;
+  --color-emerald-200: #1d4a38;
+  --color-emerald-700: #6ee7b7;
+  --color-emerald-800: #a7f3d0;
+  --color-emerald-900: #d1fae5;
+
+  --color-amber-50: #2a2210;
+  --color-amber-200: #574418;
+  --color-amber-300: #7a5f1f;
+  --color-amber-700: #fcd34d;
+  --color-amber-800: #fde68a;
+  --color-amber-900: #fef3c7;
+  --color-amber-950: #fffbeb;
+
+  --color-rose-50: #2c1318;
+  --color-rose-200: #5a2430;
+  --color-rose-600: #fb7185;
+  --color-rose-700: #fda4af;
+  --color-rose-800: #fecdd3;
+
+  --color-sky-50: #0e2331;
+  --color-sky-200: #1d4760;
+  --color-sky-700: #7dd3fc;
+  --color-sky-800: #bae6fd;
+  --color-sky-900: #e0f2fe;
+  --color-sky-950: #f0f9ff;
+}
+
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
   }
   body {
     @apply bg-canvas text-navy;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
   ::selection {
     @apply bg-indigo-100;

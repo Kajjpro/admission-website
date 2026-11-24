@@ -130,11 +130,11 @@ export function ProgressRing({ value, label, detail }: { value: number; label: s
   const pct = Math.max(0, Math.min(100, Math.round(value)));
   const r = 26;
   const c = 2 * Math.PI * r;
-  const color = pct >= 80 ? "#059669" : pct >= 40 ? "#4f46e5" : "#d97706";
+  const color = pct >= 80 ? "var(--color-emerald-600)" : pct >= 40 ? "var(--color-accent)" : "var(--color-amber-600)";
   return (
     <div className="flex items-center gap-3">
       <svg width="64" height="64" viewBox="0 0 64 64" className="shrink-0 -rotate-90" aria-hidden>
-        <circle cx="32" cy="32" r={r} fill="none" stroke="#eef0f3" strokeWidth="6" />
+        <circle cx="32" cy="32" r={r} fill="none" stroke="var(--color-slate-100)" strokeWidth="6" />
         <circle
           cx="32"
           cy="32"

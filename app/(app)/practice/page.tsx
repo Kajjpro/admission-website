@@ -5,6 +5,7 @@ import { aiConfigured } from "@/lib/ai";
 import { getPracticeStats } from "@/lib/practice";
 import { SAT_TAXONOMY, type Section } from "@/lib/sat";
 import { createClient } from "@/lib/supabase/server";
+import { fetchAll } from "@/lib/fetch-all";
 import { Card, CardHeader, PageHeader } from "@/components/ui";
 import { OfficialLinks } from "@/components/practice/official-links";
 import { TodayCard } from "@/components/practice/today-card";
@@ -16,13 +17,13 @@ export const metadata = { title: "SAT practice" };
 export default async function PracticePage() {
   const profile = await requireProfile();
   const supabase = await createClient();
-  const [stats, { data: bank }] = await Promise.all([
+  const [stats, bank] = await Promise.all([
     getPracticeStats(supabase, profile.id),
-    supabase.from("sat_questions").select("skill").eq("verified", true).limit(5000),
+    fetchAll<{ skill: string }>((from, to) => supabase.from("sat_questions").select("skill").eq("verified", true).order("id").range(from, to)),
   ]);
 
   const bankBySkill = new Map<string, number>();
-  for (const q of bank ?? []) bankBySkill.set(q.skill, (bankBySkill.get(q.skill) ?? 0) + 1);
+  for (const q of bank) bankBySkill.set(q.skill, (bankBySkill.get(q.skill) ?? 0) + 1);
   const statsBySkill = new Map(stats.bySkill.map((s) => [s.skill, s]));
   const accuracy = stats.total ? Math.round((stats.correct / stats.total) * 100) : null;
 
@@ -30,7 +31,7 @@ export default async function PracticePage() {
     <>
       <PageHeader
         title="SAT practice"
-        description={`${bank?.length ?? 0} questions across every Digital SAT skill. Missed questions come back for review until you get them right three times.`}
+        description={`${bank.length} questions across every Digital SAT skill. Missed questions come back for review until you get them right three times.`}
         action={
           <div className="flex gap-2">
             <Link href="/practice/official" className="inline-flex h-9 items-center rounded-md bg-navy px-3.5 text-sm font-medium text-white hover:bg-slate-800">

@@ -1,5 +1,6 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { fetchAll } from "@/lib/fetch-all";
 import { PageHeader } from "@/components/ui";
 import type { AdmissionResult, University, UserUniversity } from "@/lib/types";
 import { AdmissionResults } from "./admission-results";
@@ -12,8 +13,8 @@ export default async function UniversitiesPage({ searchParams }: { searchParams:
   const { q } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: universities }, { data: list }, { data: scores }, { data: results }] = await Promise.all([
-    supabase.from("universities").select("*").order("world_rank", { nullsFirst: false }).limit(3000),
+  const [universities, { data: list }, { data: scores }, { data: results }] = await Promise.all([
+    fetchAll<University>((from, to) => supabase.from("universities").select("*").order("world_rank", { nullsFirst: false }).order("id").range(from, to)),
     supabase.from("user_universities").select("id, university_id, round, status, notes").eq("user_id", profile.id),
     supabase.from("test_scores").select("test_type, total_score").eq("user_id", profile.id),
     supabase.from("admission_results").select("*").order("class_year", { ascending: false }).order("created_at", { ascending: false }).limit(60),
@@ -28,11 +29,11 @@ export default async function UniversitiesPage({ searchParams }: { searchParams:
     <>
       <PageHeader
         title="Universities"
-        description={`${universities?.length ?? 0} universities. Acceptance rates, SAT ranges and costs for U.S. colleges come from the U.S. Department of Education. Deadlines and requirements are researched for ${(universities ?? []).filter((u) => u.curated).length} top universities worldwide.`}
+        description={`${universities.length.toLocaleString("en-US")} universities. Acceptance rates, SAT ranges and costs for U.S. colleges come from the U.S. Department of Education. Deadlines and requirements are researched for ${universities.filter((u) => u.curated).length} top universities worldwide.`}
       />
       <AdmissionResults results={(results ?? []) as AdmissionResult[]} />
       <UniversityBrowser
-        universities={(universities ?? []) as University[]}
+        universities={universities}
         myList={(list ?? []) as UserUniversity[]}
         initialQuery={q ?? ""}
         isStudent={profile.role === "student"}

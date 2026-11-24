@@ -17,11 +17,11 @@ function Ring({ value, active }: { value: number; active: boolean }) {
   const pct = Math.max(0, Math.min(100, Math.round(value)));
   const r = 28;
   const c = 2 * Math.PI * r;
-  const color = pct >= 80 ? "#059669" : pct >= 40 ? "#4f46e5" : pct > 0 ? "#d97706" : "#cbd5e1";
+  const color = pct >= 80 ? "var(--color-emerald-600)" : pct >= 40 ? "var(--color-accent)" : pct > 0 ? "var(--color-amber-600)" : "var(--color-slate-300)";
   return (
     <div className="relative size-[72px] shrink-0">
       <svg viewBox="0 0 72 72" className="size-full -rotate-90" aria-hidden>
-        <circle cx="36" cy="36" r={r} fill="none" stroke="#eef0f3" strokeWidth="7" />
+        <circle cx="36" cy="36" r={r} fill="none" stroke="var(--color-slate-100)" strokeWidth="7" />
         <circle
           cx="36" cy="36" r={r} fill="none" stroke={color} strokeWidth="7" strokeLinecap="round"
           strokeDasharray={c} strokeDashoffset={c - (Math.max(0, Math.min(100, shown)) / 100) * c}

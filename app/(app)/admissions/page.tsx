@@ -85,7 +85,7 @@ export default async function AdmissionsPage() {
   return (
     <div className="space-y-20 pb-10">
       <section className="relative overflow-hidden rounded-2xl border border-line bg-white px-6 py-14 md:px-12 md:py-20">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:22px_22px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(var(--color-line)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
         <Reveal className="relative max-w-3xl">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Admissions, explained</p>
           <h1 className="mt-4 font-serif text-4xl font-medium leading-[1.1] tracking-tight md:text-6xl">What happens after you click submit</h1>

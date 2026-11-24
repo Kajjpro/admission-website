@@ -14,6 +14,7 @@ import {
   Target,
 } from "lucide-react";
 import { Reveal } from "@/components/reveal";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { daysUntil } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -49,6 +50,7 @@ export default function Home() {
             <a href="#how" className="hover:text-navy">How it works</a>
           </nav>
           <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <Link href="/login" className="h-9 rounded-md px-3.5 text-sm font-medium leading-9 text-slate-700 hover:bg-white">Sign in</Link>
             <Link href="/signup" className="h-9 rounded-md bg-navy px-3.5 text-sm font-medium leading-9 text-white hover:bg-slate-800">Get started</Link>
           </div>
@@ -56,7 +58,7 @@ export default function Home() {
       </header>
 
       <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#dfe3ea_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_at_top,black_40%,transparent_75%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(var(--color-line)_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_at_top,black_40%,transparent_75%)]" />
         <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 pb-20 pt-16 lg:grid-cols-[1.05fr_1fr] lg:pt-24">
           <Reveal>
             <p className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1 text-xs font-medium text-slate-600">
