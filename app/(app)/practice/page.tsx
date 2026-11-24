@@ -32,12 +32,17 @@ export default async function PracticePage() {
         title="SAT practice"
         description={`${bank?.length ?? 0} questions across every Digital SAT skill. Missed questions come back for review until you get them right three times.`}
         action={
-          aiConfigured() && (
+          <div className="flex gap-2">
+            <Link href="/practice/official" className="inline-flex h-9 items-center rounded-md bg-navy px-3.5 text-sm font-medium text-white hover:bg-slate-800">
+              Official questions
+            </Link>
+            {aiConfigured() && (
             <Link href="/practice/tutor" className="inline-flex h-9 items-center gap-1.5 rounded-md border border-line bg-white px-3.5 text-sm font-medium hover:bg-slate-50">
               <Sparkles className="size-4 text-accent" />
               Ask the AI tutor
             </Link>
-          )
+            )}
+          </div>
         }
       />
 

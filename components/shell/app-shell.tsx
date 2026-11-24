@@ -64,6 +64,7 @@ const LABELS: Record<string, string> = {
   practice: "SAT Practice",
   session: "Session",
   tutor: "AI tutor",
+  official: "Official questions",
   activities: "Activities",
   recommenders: "Recommendations",
   universities: "Universities",
