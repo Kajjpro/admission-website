@@ -158,7 +158,7 @@ export default async function CounselorDashboard() {
               {summaries.map((s) => (
                 <tr key={s.id}>
                   <td className="px-4 py-3">
-                    <p className="font-medium">{s.name}</p>
+                    <Link href={`/counselor/students/${s.id}`} className="font-medium text-accent hover:underline">{s.name}</Link>
                     <p className="text-xs text-slate-500">{[s.grade ? `Grade ${s.grade}` : null, s.school, s.major].filter(Boolean).join(" · ") || "Profile not filled in"}</p>
                   </td>
                   <td className="px-4 py-3 tabular-nums">{s.bestSat ?? "—"}</td>

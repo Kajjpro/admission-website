@@ -82,6 +82,7 @@ const LABELS: Record<string, string> = {
   admissions: "How admissions works",
   profile: "My application",
   profiles: "Profile review",
+  students: "Students",
   activities: "Activities",
   recommenders: "Recommendations",
   universities: "Universities",
