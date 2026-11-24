@@ -59,10 +59,7 @@ export default function Home() {
       <section className="relative overflow-hidden">
         <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 pb-20 pt-16 lg:grid-cols-[1.05fr_1fr] lg:pt-24">
           <Reveal>
-            <p className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1 text-xs font-medium text-slate-600">
-              Fall 2027 deadlines are live
-            </p>
-            <h1 className="mt-6 font-serif text-5xl font-medium leading-[1.05] tracking-tight md:text-7xl">
+            <h1 className="font-serif text-5xl font-medium leading-[1.05] tracking-tight md:text-7xl">
               Your way into the university you <em className="text-accent">actually</em> want.
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-600">
