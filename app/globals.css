@@ -1,0 +1,32 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
+
+  --color-canvas: #fafafa;
+  --color-line: #e5e7eb;
+  --color-navy: #0f172a;
+  --color-accent: #4f46e5;
+  --color-accent-soft: #eef2ff;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-canvas text-navy;
+  }
+  ::selection {
+    @apply bg-indigo-100;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+}
+
+.prose-guide {
+  @apply prose prose-slate max-w-none prose-headings:font-serif prose-headings:font-medium prose-h2:text-2xl prose-a:text-accent prose-blockquote:border-l-accent prose-blockquote:font-normal prose-blockquote:not-italic prose-th:text-left;
+}
