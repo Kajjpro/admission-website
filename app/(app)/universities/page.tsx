@@ -12,7 +12,7 @@ export default async function UniversitiesPage({ searchParams }: { searchParams:
   const supabase = await createClient();
 
   const [{ data: universities }, { data: list }] = await Promise.all([
-    supabase.from("universities").select("*").order("qs_rank", { nullsFirst: false }),
+    supabase.from("universities").select("*").order("world_rank", { nullsFirst: false }),
     supabase.from("user_universities").select("id, university_id, round, status, notes").eq("user_id", profile.id),
   ]);
 
@@ -20,7 +20,7 @@ export default async function UniversitiesPage({ searchParams }: { searchParams:
     <>
       <PageHeader
         title="Universities & deadlines"
-        description="Fall 2027 entry deadlines for top-ranked universities worldwide. Dates marked “estimated” follow last year's pattern; always confirm on the official site before you apply."
+        description="Fall 2027 entry deadlines for top universities worldwide, ranked by Times Higher Education. Dates marked “estimated” follow last year's pattern; always confirm on the official site before you apply."
       />
       <UniversityBrowser
         universities={(universities ?? []) as University[]}

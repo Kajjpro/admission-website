@@ -2,7 +2,8 @@
 
 import { useRef, useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
-import { addTask, updateUser } from "@/app/actions/admin";
+import { addTask, inviteStaff, updateUser } from "@/app/actions/admin";
+import { generateQuestions, importQuestions } from "@/app/actions/practice";
 import { Button, Card, CardHeader, Input, Label, Select, Textarea } from "@/components/ui";
 import { GRADES, TASK_CATEGORIES } from "@/lib/constants";
 import type { Profile, Role } from "@/lib/types";
@@ -107,5 +108,119 @@ export function UserRow({ user, staff }: { user: Profile; staff: { id: string; n
         <option value="admin">Admin</option>
       </Select>
     </div>
+  );
+}
+
+export function InviteForm() {
+  const [pending, start] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+  const ref = useRef<HTMLFormElement>(null);
+  return (
+    <form
+      ref={ref}
+      className="flex flex-wrap items-end gap-2 p-4"
+      action={(form) =>
+        start(async () => {
+          const res = await inviteStaff(form);
+          setMessage(res?.error ?? "Saved. They become staff when they sign up (or right away if they already have an account).");
+          if (!res?.error) ref.current?.reset();
+        })
+      }
+    >
+      <div className="min-w-40 flex-1">
+        <Label htmlFor="invite_name">Name</Label>
+        <Input id="invite_name" name="full_name" placeholder="Munkhbold" />
+      </div>
+      <div className="min-w-52 flex-1">
+        <Label htmlFor="invite_email">Email</Label>
+        <Input id="invite_email" name="email" type="email" required />
+      </div>
+      <Select name="role" className="w-32" aria-label="Role">
+        <option value="counselor">Counselor</option>
+        <option value="admin">Admin</option>
+      </Select>
+      <Button type="submit" disabled={pending}>Add</Button>
+      {message && <p className="w-full text-xs text-slate-500">{message}</p>}
+    </form>
+  );
+}
+
+export function QuestionGenerator({ skills }: { skills: { section: string; domain: string; skill: string }[] }) {
+  const [skill, setSkill] = useState(`${skills[0]!.domain}::${skills[0]!.skill}`);
+  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
+  const [count, setCount] = useState(3);
+  const [message, setMessage] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+
+  return (
+    <Card>
+      <CardHeader title="Generate questions with AI" description="Each question is solved again independently. Only questions where both answers match are added." />
+      <div className="space-y-3 p-5">
+        <Select value={skill} onChange={(e) => setSkill(e.target.value)} aria-label="Skill">
+          {skills.map((s) => (
+            <option key={s.skill} value={`${s.domain}::${s.skill}`}>{s.section === "rw" ? "R&W" : "Math"} · {s.skill}</option>
+          ))}
+        </Select>
+        <div className="grid grid-cols-2 gap-2">
+          <Select value={difficulty} onChange={(e) => setDifficulty(e.target.value as typeof difficulty)} aria-label="Difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </Select>
+          <Select value={count} onChange={(e) => setCount(Number(e.target.value))} aria-label="How many">
+            {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n} question{n > 1 ? "s" : ""}</option>)}
+          </Select>
+        </div>
+        <Button
+          className="w-full"
+          disabled={pending}
+          onClick={() =>
+            start(async () => {
+              setMessage(null);
+              const [domain, name] = skill.split("::");
+              const res = await generateQuestions({ domain: domain!, skill: name!, difficulty, count });
+              setMessage("error" in res ? res.error! : `Added ${res.added}${res.rejected ? `, discarded ${res.rejected} that failed verification` : ""}.`);
+            })
+          }
+        >
+          {pending ? "Writing and checking… (about a minute)" : "Generate"}
+        </Button>
+        {message && <p className="text-sm text-slate-600">{message}</p>}
+      </div>
+    </Card>
+  );
+}
+
+export function QuestionImporter() {
+  const [json, setJson] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  return (
+    <Card>
+      <CardHeader title="Import questions" description="Paste a JSON array. Only import questions your school has the right to use." />
+      <div className="space-y-3 p-5">
+        <Textarea
+          rows={6}
+          value={json}
+          onChange={(e) => setJson(e.target.value)}
+          className="font-mono text-xs"
+          placeholder={'[{"section":"math","domain":"Algebra","skill":"Linear functions","difficulty":"easy","stem":"...","answer_type":"mcq","choices":[{"key":"A","text":"...","rationale":"..."}],"correct_answer":"A","explanation":"..."}]'}
+        />
+        <Button
+          variant="secondary"
+          disabled={pending || !json.trim()}
+          onClick={() =>
+            start(async () => {
+              const res = await importQuestions(json);
+              setMessage("error" in res ? res.error! : `Imported ${res.added} questions.`);
+              if (!("error" in res)) setJson("");
+            })
+          }
+        >
+          Import
+        </Button>
+        {message && <p className="text-sm text-slate-600">{message}</p>}
+      </div>
+    </Card>
   );
 }

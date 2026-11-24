@@ -41,8 +41,12 @@ export default async function EditUniversityPage({ params }: { params: Promise<{
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="qs_rank">QS rank</Label>
-              <Input id="qs_rank" name="qs_rank" type="number" min={1} max={1500} defaultValue={uni?.qs_rank ?? ""} />
+              <Label htmlFor="world_rank">THE 2027 rank</Label>
+              <Input id="world_rank" name="world_rank" type="number" min={1} max={2500} defaultValue={uni?.world_rank ?? ""} />
+              <label className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-600">
+                <input type="checkbox" name="rank_confirmed" defaultChecked={uni?.rank_confirmed} className="accent-accent" />
+                Exact position confirmed
+              </label>
             </div>
             <div>
               <Label htmlFor="deadline_status">Deadline status</Label>

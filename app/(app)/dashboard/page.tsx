@@ -9,6 +9,8 @@ import { nextDeadline } from "@/lib/universities";
 import { daysUntil, formatDate, formatDateTime } from "@/lib/utils";
 import { Badge, Card, CardHeader, ProgressRing } from "@/components/ui";
 import type { Essay, RoadmapTask, TaskStatus, University } from "@/lib/types";
+import { getPracticeStats } from "@/lib/practice";
+import { TodayCard } from "@/components/practice/today-card";
 import { RoadmapChecklist } from "./roadmap-checklist";
 
 export const metadata = { title: "Dashboard" };
@@ -20,7 +22,8 @@ export default async function DashboardPage() {
   const grade = await getGradeView(profile);
   const supabase = await createClient();
 
-  const [tasks, progress, essays, scores, activities, recs, list] = await Promise.all([
+  const [practice, tasks, progress, essays, scores, activities, recs, list] = await Promise.all([
+    getPracticeStats(supabase, profile.id),
     supabase.from("roadmap_tasks").select("*").eq("grade_level", grade).order("sort_order"),
     supabase.from("user_task_progress").select("task_id, status").eq("user_id", profile.id),
     supabase.from("user_essays").select("id, title, review_status, word_count, meeting_at, needs_in_person_meeting").eq("user_id", profile.id),
@@ -61,6 +64,8 @@ export default async function DashboardPage() {
           Showing the grade {grade} roadmap{grade !== profile.grade_level && profile.grade_level ? ` (you're in grade ${profile.grade_level})` : ""}.
         </p>
       </div>
+
+      <TodayCard stats={practice} goal={profile.daily_goal} />
 
       <Card className="grid grid-cols-2 gap-6 p-5 lg:grid-cols-4">
         {readiness.map((r) => (

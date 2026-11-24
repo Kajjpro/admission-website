@@ -11,6 +11,7 @@ export interface Profile {
   assigned_counselor_id: string | null;
   sat_target: number | null;
   ielts_target: number | null;
+  daily_goal: number;
   onboarded: boolean;
 }
 
@@ -154,7 +155,9 @@ export interface University {
   country: string;
   city: string | null;
   region: string;
-  qs_rank: number | null;
+  world_rank: number | null;
+  ranking_source: string;
+  rank_confirmed: boolean;
   platform: string | null;
   deadlines: Deadline[];
   testing: string | null;

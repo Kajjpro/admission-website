@@ -7,14 +7,16 @@ import { cn, formatDate } from "@/lib/utils";
 import { Badge, Card, PageHeader, buttonClass } from "@/components/ui";
 import { SourceBadge } from "@/components/source-badge";
 import type { Guide, Profile, RoadmapTask, University } from "@/lib/types";
-import { DeleteButton, TaskForm, UserRow } from "./admin-client";
-import { deleteGuide, deleteTask } from "@/app/actions/admin";
+import { DeleteButton, InviteForm, QuestionGenerator, QuestionImporter, TaskForm, UserRow } from "./admin-client";
+import { SAT_TAXONOMY, type Section } from "@/lib/sat";
+import { deleteGuide, deleteTask, removeInvite } from "@/app/actions/admin";
 
 export const metadata = { title: "Content & users" };
 
 const TABS = [
   ["guides", "Guides"],
   ["tasks", "Roadmap tasks"],
+  ["questions", "Question bank"],
   ["universities", "Universities"],
   ["users", "Users"],
 ] as const;
@@ -36,6 +38,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       </div>
       {tab === "guides" && <GuidesTab supabase={supabase} />}
       {tab === "tasks" && <TasksTab supabase={supabase} />}
+      {tab === "questions" && <QuestionsTab supabase={supabase} />}
       {tab === "universities" && <UniversitiesTab supabase={supabase} />}
       {tab === "users" && <UsersTab supabase={supabase} />}
     </>
@@ -97,7 +100,7 @@ async function TasksTab({ supabase }: { supabase: Client }) {
 }
 
 async function UniversitiesTab({ supabase }: { supabase: Client }) {
-  const { data } = await supabase.from("universities").select("id, name, country, qs_rank, deadline_status, last_reviewed").order("qs_rank");
+  const { data } = await supabase.from("universities").select("id, name, country, world_rank, deadline_status, last_reviewed").order("world_rank");
   return (
     <div className="space-y-3">
       <Link href="/admin/universities/new" className={buttonClass("primary", "sm")}>Add university</Link>
@@ -106,7 +109,7 @@ async function UniversitiesTab({ supabase }: { supabase: Client }) {
           <div key={u.id} className="flex items-center gap-3 px-5 py-2.5">
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{u.name}</p>
-              <p className="text-xs text-slate-500">{u.country} · QS {rankBand(u.qs_rank)} · reviewed {formatDate(u.last_reviewed)}</p>
+              <p className="text-xs text-slate-500">{u.country} · THE {rankBand(u.world_rank)} · reviewed {formatDate(u.last_reviewed)}</p>
             </div>
             <Badge tone={u.deadline_status === "confirmed" ? "emerald" : "amber"}>{u.deadline_status}</Badge>
             <Link href={`/admin/universities/${u.id}`} className={buttonClass("secondary", "sm")}>Edit</Link>
@@ -118,12 +121,69 @@ async function UniversitiesTab({ supabase }: { supabase: Client }) {
 }
 
 async function UsersTab({ supabase }: { supabase: Client }) {
-  const { data } = await supabase.from("profiles").select("*").order("role").order("full_name");
+  const [{ data }, { data: invites }] = await Promise.all([
+    supabase.from("profiles").select("*").order("role").order("full_name"),
+    supabase.from("staff_invites").select("*").order("created_at"),
+  ]);
   const users = (data ?? []) as Profile[];
   const staff = users.filter((u) => u.role !== "student").map((u) => ({ id: u.id, name: u.full_name ?? u.email ?? "Unnamed" }));
   return (
-    <Card className="divide-y divide-line">
-      {users.map((u) => <UserRow key={u.id} user={u} staff={staff} />)}
-    </Card>
+    <div className="space-y-6">
+      <Card>
+        <p className="border-b border-line px-5 py-3 text-sm font-semibold">Invite a counselor or admin</p>
+        <InviteForm />
+        {(invites ?? []).length > 0 && (
+          <ul className="divide-y divide-line border-t border-line">
+            {(invites ?? []).map((i) => {
+              const joined = users.some((u) => u.email?.toLowerCase() === i.email);
+              return (
+                <li key={i.email} className="flex items-center gap-3 px-5 py-2.5 text-sm">
+                  <span className="flex-1">{i.full_name ?? i.email} <span className="text-slate-500">· {i.email}</span></span>
+                  <Badge tone={joined ? "emerald" : "amber"}>{joined ? "Joined" : "Waiting for sign-up"}</Badge>
+                  <span className="text-xs capitalize text-slate-500">{i.role}</span>
+                  <DeleteButton action={removeInvite.bind(null, i.email)} label={i.email} />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Card>
+      <Card className="divide-y divide-line">
+        {users.map((u) => <UserRow key={u.id} user={u} staff={staff} />)}
+      </Card>
+    </div>
+  );
+}
+
+async function QuestionsTab({ supabase }: { supabase: Client }) {
+  const { data } = await supabase.from("sat_questions").select("skill, source, verified").limit(10000);
+  const counts = new Map<string, number>();
+  for (const q of data ?? []) counts.set(q.skill, (counts.get(q.skill) ?? 0) + 1);
+  const skills = (Object.keys(SAT_TAXONOMY) as Section[]).flatMap((section) =>
+    Object.entries(SAT_TAXONOMY[section].domains).flatMap(([domain, list]) => list.map((skill) => ({ section, domain, skill }))),
+  );
+  const bySource = (source: string) => (data ?? []).filter((q) => q.source === source).length;
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+      <Card>
+        <p className="border-b border-line px-5 py-3 text-sm font-semibold">
+          {data?.length ?? 0} questions · {bySource("original")} original · {bySource("ai")} AI-generated · {bySource("imported")} imported
+        </p>
+        <ul className="divide-y divide-line">
+          {skills.map((s) => (
+            <li key={s.skill} className="flex items-center gap-3 px-5 py-2 text-sm">
+              <span className="w-10 text-xs text-slate-400">{s.section === "rw" ? "R&W" : "Math"}</span>
+              <span className="flex-1 truncate">{s.skill}</span>
+              <span className={`tabular-nums ${counts.get(s.skill) ? "text-slate-700" : "text-rose-600"}`}>{counts.get(s.skill) ?? 0}</span>
+            </li>
+          ))}
+        </ul>
+      </Card>
+      <div className="space-y-6">
+        <QuestionGenerator skills={skills} />
+        <QuestionImporter />
+      </div>
+    </div>
   );
 }

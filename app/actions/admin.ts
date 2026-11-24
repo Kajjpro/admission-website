@@ -77,7 +77,8 @@ export async function saveUniversity(form: FormData) {
     country: String(form.get("country")).trim(),
     region: String(form.get("region")),
     city: text("city"),
-    qs_rank: Number(form.get("qs_rank")) || null,
+    world_rank: Number(form.get("world_rank")) || null,
+    rank_confirmed: form.get("rank_confirmed") === "on",
     platform: text("platform"),
     deadlines: parseJson<Deadline[]>(form.get("deadlines"), []),
     testing: text("testing"),
@@ -103,5 +104,24 @@ export async function updateUser(userId: string, patch: { role?: Role; assigned_
   const { supabase } = await authedClient();
   const { error } = await supabase.from("profiles").update(patch).eq("id", userId);
   if (error) return { error: error.message };
+  revalidatePath("/admin");
+}
+
+export async function inviteStaff(form: FormData) {
+  const { supabase } = await authedClient();
+  const email = String(form.get("email") ?? "").trim().toLowerCase();
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: "Enter a valid email." };
+  const { error } = await supabase.from("staff_invites").upsert({
+    email,
+    role: form.get("role") === "admin" ? "admin" : "counselor",
+    full_name: String(form.get("full_name") ?? "").trim() || null,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin");
+}
+
+export async function removeInvite(email: string) {
+  const { supabase } = await authedClient();
+  await supabase.from("staff_invites").delete().eq("email", email);
   revalidatePath("/admin");
 }

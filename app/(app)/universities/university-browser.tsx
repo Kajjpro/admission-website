@@ -52,17 +52,17 @@ export function UniversityBrowser({
         if (q && !`${uni.name} ${uni.country} ${uni.city ?? ""}`.toLowerCase().includes(q)) return false;
         if (region && uni.region !== region) return false;
         if (country && uni.country !== country) return false;
-        if (maxRank && !(uni.qs_rank && uni.qs_rank > minRank && uni.qs_rank <= maxRank)) return false;
+        if (maxRank && !(uni.world_rank && uni.world_rank > minRank && uni.world_rank <= maxRank)) return false;
         if (within && !(next && daysUntil(next.date!) <= Number(within))) return false;
         return true;
       });
 
     return rows.sort((a, b) => {
       if (sort === "name") return a.uni.name.localeCompare(b.uni.name);
-      if (sort === "rank") return (a.uni.qs_rank ?? 9999) - (b.uni.qs_rank ?? 9999);
+      if (sort === "rank") return (a.uni.world_rank ?? 9999) - (b.uni.world_rank ?? 9999);
       const ad = a.next?.date ?? "9999";
       const bd = b.next?.date ?? "9999";
-      return ad.localeCompare(bd) || (a.uni.qs_rank ?? 9999) - (b.uni.qs_rank ?? 9999);
+      return ad.localeCompare(bd) || (a.uni.world_rank ?? 9999) - (b.uni.world_rank ?? 9999);
     });
   }, [universities, query, region, country, band, within, sort]);
 
@@ -103,8 +103,8 @@ export function UniversityBrowser({
           {countries.map((c) => <option key={c}>{c}</option>)}
         </Select>
         <Select value={band} onChange={(e) => setBand(e.target.value)} className="w-auto">
-          <option value="">Any QS rank</option>
-          {RANK_BANDS.map((b) => <option key={b.id} value={b.id}>QS {b.label}</option>)}
+          <option value="">Any THE rank</option>
+          {RANK_BANDS.map((b) => <option key={b.id} value={b.id}>THE {b.label}</option>)}
         </Select>
         <Select value={within} onChange={(e) => setWithin(e.target.value)} className="w-auto">
           <option value="">Any deadline</option>
@@ -114,7 +114,7 @@ export function UniversityBrowser({
         </Select>
         <Select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="w-auto sm:ml-auto">
           <option value="deadline">Sort: next deadline</option>
-          <option value="rank">Sort: QS rank</option>
+          <option value="rank">Sort: THE rank</option>
           <option value="name">Sort: name</option>
         </Select>
       </div>
@@ -122,7 +122,7 @@ export function UniversityBrowser({
       <Card className="overflow-hidden">
         <div className="hidden grid-cols-[minmax(0,1fr)_90px_190px_120px_32px] gap-4 border-b border-line bg-slate-50 px-5 py-2 text-xs font-medium text-slate-500 md:grid">
           <span>University</span>
-          <span>QS 2026</span>
+          <span>THE 2027</span>
           <span>Next deadline</span>
           <span>Platform</span>
           <span />
@@ -144,7 +144,7 @@ export function UniversityBrowser({
         </ul>
       </Card>
       <p className="text-xs text-slate-500">
-        {universities.length} universities. Rankings are approximate positions in the QS World University Rankings 2026 and are shown as bands.
+        {universities.length} universities. Rankings follow the Times Higher Education World University Rankings 2027: exact positions are shown where THE has published them (top 20 and others named in its announcement); the rest are approximate and shown as bands.
         Deadlines are for first-year undergraduate entry in fall 2027 unless noted.
       </p>
     </div>
@@ -188,7 +188,9 @@ function UniversityRow({
           </p>
           <p className="truncate text-xs text-slate-500">{[uni.city, uni.country].filter(Boolean).join(", ")}</p>
         </div>
-        <span className="hidden text-sm tabular-nums text-slate-600 md:block">{rankBand(uni.qs_rank)}</span>
+        <span className="hidden text-sm tabular-nums text-slate-600 md:block" title={uni.rank_confirmed ? "Confirmed THE 2027 position" : "Approximate band"}>
+          {uni.rank_confirmed && uni.world_rank ? `#${uni.world_rank}` : rankBand(uni.world_rank)}
+        </span>
         <div className="hidden min-w-0 md:block">
           {next ? (
             <div className="flex items-center gap-2">
