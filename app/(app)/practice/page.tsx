@@ -6,6 +6,7 @@ import { getPracticeStats } from "@/lib/practice";
 import { SAT_TAXONOMY, type Section } from "@/lib/sat";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, PageHeader } from "@/components/ui";
+import { OfficialLinks } from "@/components/practice/official-links";
 import { TodayCard } from "@/components/practice/today-card";
 import { cn } from "@/lib/utils";
 import { CustomSetBuilder, GoalSetter } from "./practice-client";
@@ -91,11 +92,12 @@ export default async function PracticePage() {
               <p className="text-sm text-slate-500">{accuracy === null ? "No attempts yet" : `${accuracy}% correct`}</p>
             </Card>
             <CustomSetBuilder />
+            <OfficialLinks />
             <GoalSetter goal={profile.daily_goal} />
             {profile.role !== "student" && (
               <Card className="p-5 text-sm">
                 <p className="font-medium">Grow the bank</p>
-                <p className="mt-1 text-slate-500">Generate verified questions for any skill from Content & users → Question bank.</p>
+                <p className="mt-1 text-slate-500">Generate verified questions for any skill from Content & users → Question bank, or fill every skill at once with <code className="text-xs">npm run bank:generate</code>.</p>
               </Card>
             )}
           </div>
