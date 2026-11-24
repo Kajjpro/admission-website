@@ -13,6 +13,12 @@ export interface Profile {
   ielts_target: number | null;
   daily_goal: number;
   onboarded: boolean;
+  school_name: string | null;
+  intended_major: string | null;
+  gpa: string | null;
+  class_rank: string | null;
+  rigor_notes: string | null;
+  spike_statement: string | null;
 }
 
 export type TaskCategory = "essay" | "testing" | "ec" | "rec" | "general";

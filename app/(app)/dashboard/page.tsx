@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CalendarClock, MapPin } from "lucide-react";
+import { ArrowRight, CalendarClock, Compass, MapPin } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
 import { getGradeView } from "@/lib/grade";
 import { createClient } from "@/lib/supabase/server";
-import { activityReadiness, essayReadiness, recReadiness, testingReadiness } from "@/lib/readiness";
+import { activityReadiness, essayReadiness, profileReadiness, recReadiness, testingReadiness} from "@/lib/readiness";
+import { ReadinessPanel } from "./readiness-panel";
 import { nextDeadline } from "@/lib/universities";
 import { daysUntil, formatDate, formatDateTime } from "@/lib/utils";
-import { Badge, Card, CardHeader, ProgressRing } from "@/components/ui";
+import { Badge, Card, CardHeader } from "@/components/ui";
 import type { Essay, RoadmapTask, TaskStatus, University } from "@/lib/types";
 import { getPracticeStats } from "@/lib/practice";
 import { TodayCard } from "@/components/practice/today-card";
@@ -17,12 +18,12 @@ export const metadata = { title: "Dashboard" };
 
 export default async function DashboardPage() {
   const profile = await requireProfile();
-  if (profile.role !== "student") redirect("/counselor");
+  if (profile.role === "counselor") redirect("/counselor");
 
   const grade = await getGradeView(profile);
   const supabase = await createClient();
 
-  const [practice, tasks, progress, essays, scores, activities, recs, list] = await Promise.all([
+  const [practice, tasks, progress, essays, scores, activities, recs, list, honors] = await Promise.all([
     getPracticeStats(supabase, profile.id),
     supabase.from("roadmap_tasks").select("*").eq("grade_level", grade).order("sort_order"),
     supabase.from("user_task_progress").select("task_id, status").eq("user_id", profile.id),
@@ -31,16 +32,25 @@ export default async function DashboardPage() {
     supabase.from("activities").select("id", { count: "exact", head: true }).eq("user_id", profile.id),
     supabase.from("recommenders").select("status").eq("user_id", profile.id),
     supabase.from("user_universities").select("round, universities(id, name, country, deadlines)").eq("user_id", profile.id),
+    supabase.from("honors").select("id", { count: "exact", head: true }).eq("user_id", profile.id),
   ]);
 
   const statusByTask = Object.fromEntries((progress.data ?? []).map((p) => [p.task_id, p.status as TaskStatus]));
   const essayRows = (essays.data ?? []) as Pick<Essay, "id" | "title" | "review_status" | "word_count" | "meeting_at" | "needs_in_person_meeting">[];
 
   const readiness = [
-    { label: "Essays", value: essayReadiness(essayRows), detail: `${essayRows.length} in progress` },
-    { label: "Testing", value: testingReadiness(scores.data ?? [], profile), detail: `${scores.data?.length ?? 0} scores logged` },
-    { label: "Activities", value: activityReadiness(activities.count ?? 0), detail: `${activities.count ?? 0} of 10 listed` },
-    { label: "Recommendations", value: recReadiness(recs.data ?? []), detail: `${recs.data?.filter((r) => r.status === "submitted").length ?? 0} of 2 submitted` },
+    essayReadiness(essayRows),
+    testingReadiness(scores.data ?? [], profile),
+    activityReadiness(activities.count ?? 0),
+    recReadiness(recs.data ?? []),
+    profileReadiness({
+      profile,
+      scores: scores.data?.length ?? 0,
+      activities: activities.count ?? 0,
+      honors: honors.count ?? 0,
+      essaysWithWords: essayRows.filter((e) => e.word_count > 0).length,
+      recommenders: recs.data?.length ?? 0,
+    }),
   ];
 
   type ListRow = { round: string | null; universities: Pick<University, "id" | "name" | "country" | "deadlines"> };
@@ -67,11 +77,18 @@ export default async function DashboardPage() {
 
       <TodayCard stats={practice} goal={profile.daily_goal} />
 
-      <Card className="grid grid-cols-2 gap-6 p-5 lg:grid-cols-4">
-        {readiness.map((r) => (
-          <ProgressRing key={r.label} {...r} />
-        ))}
-      </Card>
+      <Link href="/admissions" className="group flex items-center gap-4 rounded-lg border border-indigo-200 bg-gradient-to-r from-indigo-50 to-white p-5 transition-colors hover:border-accent">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-accent ring-1 ring-indigo-200">
+          <Compass className="size-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold">How admissions works</p>
+          <p className="text-sm text-slate-600">How readers rate your file, who you're compared with, and a reader card for your profile.</p>
+        </div>
+        <ArrowRight className="size-5 shrink-0 text-accent transition-transform group-hover:translate-x-0.5" />
+      </Link>
+
+      <ReadinessPanel items={readiness} />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <Card>

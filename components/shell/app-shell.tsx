@@ -8,6 +8,8 @@ import {
   BookOpen,
   Building2,
   ChevronsLeft,
+  IdCard,
+  Compass,
   GraduationCap,
   Inbox,
   LayoutDashboard,
@@ -31,31 +33,38 @@ export interface NavItem {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  group: string;
 }
 
 const STUDENT_NAV: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/essays", label: "Essay Studio", icon: PenLine },
-  { href: "/guides", label: "Guides", icon: BookOpen },
-  { href: "/resources", label: "Resources", icon: Library },
-  { href: "/practice", label: "SAT Practice", icon: ListChecks },
-  { href: "/testing", label: "Scores", icon: Target },
-  { href: "/activities", label: "Activities", icon: Trophy },
-  { href: "/recommenders", label: "Recommendations", icon: Mail },
-  { href: "/universities", label: "Universities", icon: Building2 },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, group: "Overview" },
+  { href: "/admissions", label: "How admissions works", icon: Compass, group: "Overview" },
+  { href: "/profile", label: "My application", icon: IdCard, group: "Overview" },
+  { href: "/essays", label: "Essay Studio", icon: PenLine, group: "Build" },
+  { href: "/activities", label: "Activities", icon: Trophy, group: "Build" },
+  { href: "/recommenders", label: "Recommendations", icon: Mail, group: "Build" },
+  { href: "/practice", label: "SAT Practice", icon: ListChecks, group: "Build" },
+  { href: "/testing", label: "Scores", icon: Target, group: "Build" },
+  { href: "/universities", label: "Universities", icon: Building2, group: "Explore" },
+  { href: "/guides", label: "Guides", icon: BookOpen, group: "Explore" },
+  { href: "/resources", label: "Resources", icon: Library, group: "Explore" },
 ];
 
 const STAFF_NAV: NavItem[] = [
-  { href: "/counselor", label: "Review queue", icon: Inbox },
-  { href: "/practice", label: "SAT Practice", icon: ListChecks },
-  { href: "/guides", label: "Guides", icon: BookOpen },
-  { href: "/resources", label: "Resources", icon: Library },
-  { href: "/universities", label: "Universities", icon: Building2 },
+  { href: "/counselor", label: "Review queue", icon: Inbox, group: "Counselling" },
+  { href: "/admissions", label: "How admissions works", icon: Compass, group: "Explore" },
+  { href: "/practice", label: "SAT Practice", icon: ListChecks, group: "Explore" },
+  { href: "/universities", label: "Universities", icon: Building2, group: "Explore" },
+  { href: "/guides", label: "Guides", icon: BookOpen, group: "Explore" },
+  { href: "/resources", label: "Resources", icon: Library, group: "Explore" },
 ];
 
 export function navFor(role: Role): NavItem[] {
   if (role === "student") return STUDENT_NAV;
-  if (role === "admin") return [...STAFF_NAV, { href: "/admin", label: "Content & users", icon: Shield }];
+  if (role === "admin") {
+    const staffOnly = STAFF_NAV.filter((item) => !STUDENT_NAV.some((s) => s.href === item.href));
+    return [...STUDENT_NAV, ...staffOnly, { href: "/admin", label: "Content & users", icon: Shield, group: "Admin" }];
+  }
   return STAFF_NAV;
 }
 
@@ -69,6 +78,9 @@ const LABELS: Record<string, string> = {
   tutor: "AI tutor",
   official: "Official questions",
   resources: "Resources",
+  admissions: "How admissions works",
+  profile: "My application",
+  profiles: "Profile review",
   activities: "Activities",
   recommenders: "Recommendations",
   universities: "Universities",
@@ -127,12 +139,17 @@ export function AppShell({
           {!collapsed && <span className="truncate text-sm font-semibold">Admissions Prep</span>}
         </div>
 
-        <nav className="flex-1 space-y-0.5 p-2">
-          {nav.map((item) => {
+        <nav className="flex-1 space-y-0.5 overflow-y-auto p-2">
+          {nav.map((item, index) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const heading = index === 0 || nav[index - 1]!.group !== item.group;
             return (
+              <div key={item.href}>
+              {heading && !collapsed && (
+                <p className={cn("px-2.5 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400", index === 0 ? "pt-1" : "pt-4")}>{item.group}</p>
+              )}
+              {heading && collapsed && index > 0 && <div className="mx-2 my-2 border-t border-line" />}
               <Link
-                key={item.href}
                 href={item.href}
                 title={collapsed ? item.label : undefined}
                 className={cn(
@@ -143,6 +160,7 @@ export function AppShell({
                 <item.icon className="size-4 shrink-0" />
                 {!collapsed && <span className="truncate">{item.label}</span>}
               </Link>
+              </div>
             );
           })}
         </nav>
@@ -180,7 +198,7 @@ export function AppShell({
         <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line bg-white/85 px-4 backdrop-blur md:px-6">
           <Breadcrumbs pathname={pathname} />
           <div className="ml-auto flex items-center gap-2">
-            {profile.role === "student" && <GradeSelect value={gradeView} />}
+            {profile.role !== "counselor" && <GradeSelect value={gradeView} />}
             <button
               onClick={() => setPaletteOpen(true)}
               className="flex h-8 items-center gap-2 rounded-md border border-line bg-white px-2.5 text-xs text-slate-500 hover:text-navy"

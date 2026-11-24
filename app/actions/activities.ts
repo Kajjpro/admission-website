@@ -26,12 +26,14 @@ export async function saveActivity(form: FormData) {
     if (error) return { error: error.message };
   }
   revalidatePath("/activities");
+  revalidatePath("/dashboard");
 }
 
 export async function deleteActivity(id: string) {
   const { supabase } = await authedClient();
   await supabase.from("activities").delete().eq("id", id);
   revalidatePath("/activities");
+  revalidatePath("/dashboard");
 }
 
 /** Persists a full ordering after a move in the UI. */
@@ -41,4 +43,5 @@ export async function reorderActivities(orderedIds: string[]) {
     orderedIds.map((id, index) => supabase.from("activities").update({ position_order: index }).eq("id", id)),
   );
   revalidatePath("/activities");
+  revalidatePath("/dashboard");
 }

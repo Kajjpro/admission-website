@@ -40,14 +40,25 @@ export default async function CounselorPage({ searchParams }: { searchParams: Pr
     .order("submitted_at", { ascending: true });
   if (profile.role !== "admin") query = query.eq("counselor_id", profile.id);
 
-  const [{ data: essays }, { data: students }] = await Promise.all([
+  let profileQuery = supabase
+    .from("profile_reviews")
+    .select("id, status, created_at, student_note, student:profiles!profile_reviews_student_id_fkey(full_name, grade_level)")
+    .order("status", { ascending: true })
+    .order("created_at", { ascending: false })
+    .limit(30);
+  if (profile.role !== "admin") profileQuery = profileQuery.eq("counselor_id", profile.id);
+
+  const [{ data: essays }, { data: students }, { data: profileReviews }] = await Promise.all([
     query,
     supabase
       .from("profiles")
       .select("id, full_name, grade_level, target_regions")
       .eq("assigned_counselor_id", profile.id)
       .order("full_name"),
+    profileQuery,
   ]);
+  type ProfileReviewRow = { id: string; status: string; created_at: string; student_note: string | null; student: { full_name: string | null; grade_level: number | null } | null };
+  const profileRows = (profileReviews ?? []) as unknown as ProfileReviewRow[];
   const rows = (essays ?? []) as unknown as QueueRow[];
 
   return (
@@ -91,6 +102,24 @@ export default async function CounselorPage({ searchParams }: { searchParams: Pr
           <EmptyState title="Nothing here">No essays match this filter.</EmptyState>
         )}
 
+        <div className="space-y-6">
+        <Card className="h-fit">
+          <CardHeader title="Profile reviews" description={`${profileRows.filter((r) => r.status === "submitted").length} waiting`} />
+          <ul className="divide-y divide-line">
+            {profileRows.map((r) => (
+              <li key={r.id}>
+                <Link href={`/counselor/profiles/${r.id}`} className="flex items-center gap-2 px-5 py-2.5 hover:bg-slate-50">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm">{r.student?.full_name ?? "Student"}</p>
+                    <p className="text-xs text-slate-500">{formatDate(r.created_at, { year: undefined })}{r.student?.grade_level ? ` · Grade ${r.student.grade_level}` : ""}</p>
+                  </div>
+                  <Badge tone={r.status === "submitted" ? "indigo" : "emerald"}>{r.status === "submitted" ? "New" : "Done"}</Badge>
+                </Link>
+              </li>
+            ))}
+            {!profileRows.length && <li className="px-5 py-4 text-sm text-slate-500">Students send their full profile from My application.</li>}
+          </ul>
+        </Card>
         <Card className="h-fit">
           <CardHeader title="My students" description={`${students?.length ?? 0} assigned`} />
           <ul className="divide-y divide-line">
@@ -106,6 +135,7 @@ export default async function CounselorPage({ searchParams }: { searchParams: Pr
             {!students?.length && <li className="px-5 py-4 text-sm text-slate-500">Students choose you during onboarding.</li>}
           </ul>
         </Card>
+        </div>
       </div>
     </>
   );

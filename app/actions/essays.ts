@@ -80,6 +80,7 @@ export async function submitForReview(
   if (error) return { error: error.message };
 
   revalidatePath(`/essays/${essayId}`);
+  revalidatePath("/dashboard");
   revalidatePath("/counselor");
 }
 
@@ -88,6 +89,7 @@ export async function markEssayStatus(essayId: string, status: Extract<ReviewSta
   const { error } = await supabase.from("user_essays").update({ review_status: status }).eq("id", essayId);
   if (error) return { error: error.message };
   revalidatePath(`/essays/${essayId}`);
+  revalidatePath("/dashboard");
 }
 
 export async function addFeedback(input: {
@@ -119,6 +121,7 @@ export async function setFeedbackResolved(id: string, essayId: string, resolved:
   const { error } = await supabase.from("essay_feedback").update({ is_resolved: resolved }).eq("id", id);
   if (error) return { error: error.message };
   revalidatePath(`/essays/${essayId}`);
+  revalidatePath("/dashboard");
   revalidatePath(`/counselor/essays/${essayId}`);
 }
 
@@ -136,5 +139,6 @@ export async function updateReview(
   if (error) return { error: error.message };
   revalidatePath(`/counselor/essays/${essayId}`);
   revalidatePath(`/essays/${essayId}`);
+  revalidatePath("/dashboard");
   revalidatePath("/counselor");
 }
