@@ -84,7 +84,7 @@ export default async function AdmissionsPage() {
 
   return (
     <div className="space-y-20 pb-10">
-      <section className="relative -mx-4 -mt-6 overflow-hidden border-b border-line bg-white px-4 py-14 md:-mx-8 md:-mt-8 md:px-8 md:py-20">
+      <section className="relative overflow-hidden rounded-2xl border border-line bg-white px-6 py-14 md:px-12 md:py-20">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:22px_22px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
         <Reveal className="relative max-w-3xl">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Admissions, explained</p>
@@ -141,7 +141,8 @@ export default async function AdmissionsPage() {
         intro="Many selective colleges turn a file into a few ratings. Harvard's process, described in the U.S. Supreme Court's 2023 SFFA opinion, rates applicants from 1 (best) to 6 in academic, extracurricular, athletic and personal categories, then gives an overall rating. Below is a simplified version of the top four levels."
       >
         <Reveal>
-          <Card className="overflow-hidden">
+          <Card className="overflow-x-auto">
+            <div className="min-w-[720px]">
             <div className="grid grid-cols-[120px_repeat(4,minmax(0,1fr))] border-b border-line bg-slate-50 text-xs font-semibold text-slate-500">
               <span className="px-4 py-3">Category</span>
               {[1, 2, 3, 4].map((n) => (
@@ -159,6 +160,7 @@ export default async function AdmissionsPage() {
                 ))}
               </div>
             ))}
+            </div>
           </Card>
         </Reveal>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
