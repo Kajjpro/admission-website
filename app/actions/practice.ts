@@ -110,3 +110,29 @@ export async function importQuestions(json: string) {
   revalidatePath("/practice");
   return { added: parsed.data.length };
 }
+
+const SOURCES = ["sat_question_bank", "college_board", "bluebook", "khan", "other"] as const;
+
+/** Record practice done on an official site so it counts toward streaks and skill progress. */
+export async function logOfficialPractice(input: { source: string; section: string | null; skill: string | null; attempted: number; correct: number }) {
+  const { supabase, userId } = await authedClient();
+  const attempted = Math.round(input.attempted);
+  const correct = Math.round(input.correct);
+  if (!SOURCES.includes(input.source as (typeof SOURCES)[number])) return { error: "Unknown source." };
+  if (!(attempted >= 1 && attempted <= 500)) return { error: "Questions must be between 1 and 500." };
+  if (!(correct >= 0 && correct <= attempted)) return { error: "Correct can't be more than the number of questions." };
+
+  const today = new Date();
+  const { error } = await supabase.from("official_practice_logs").insert({
+    user_id: userId,
+    source: input.source,
+    section: input.section === "rw" || input.section === "math" ? input.section : null,
+    skill: input.skill || null,
+    attempted,
+    correct,
+    logged_on: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/practice");
+  revalidatePath("/dashboard");
+}

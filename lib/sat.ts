@@ -46,6 +46,15 @@ export const SAT_TAXONOMY: Record<Section, { label: string; domains: Record<stri
   },
 };
 
+export function locateSkill(skill: string): { section: Section; domain: string } | null {
+  for (const section of Object.keys(SAT_TAXONOMY) as Section[]) {
+    for (const [domain, skills] of Object.entries(SAT_TAXONOMY[section].domains)) {
+      if (skills.includes(skill)) return { section, domain };
+    }
+  }
+  return null;
+}
+
 export function sectionOfDomain(domain: string): Section | null {
   if (domain in SAT_TAXONOMY.rw.domains) return "rw";
   if (domain in SAT_TAXONOMY.math.domains) return "math";

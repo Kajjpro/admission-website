@@ -11,6 +11,7 @@ import {
   GraduationCap,
   Inbox,
   LayoutDashboard,
+  Library,
   ListChecks,
   LogOut,
   Mail,
@@ -36,6 +37,7 @@ const STUDENT_NAV: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/essays", label: "Essay Studio", icon: PenLine },
   { href: "/guides", label: "Guides", icon: BookOpen },
+  { href: "/resources", label: "Resources", icon: Library },
   { href: "/practice", label: "SAT Practice", icon: ListChecks },
   { href: "/testing", label: "Scores", icon: Target },
   { href: "/activities", label: "Activities", icon: Trophy },
@@ -47,6 +49,7 @@ const STAFF_NAV: NavItem[] = [
   { href: "/counselor", label: "Review queue", icon: Inbox },
   { href: "/practice", label: "SAT Practice", icon: ListChecks },
   { href: "/guides", label: "Guides", icon: BookOpen },
+  { href: "/resources", label: "Resources", icon: Library },
   { href: "/universities", label: "Universities", icon: Building2 },
 ];
 
@@ -65,6 +68,7 @@ const LABELS: Record<string, string> = {
   session: "Session",
   tutor: "AI tutor",
   official: "Official questions",
+  resources: "Resources",
   activities: "Activities",
   recommenders: "Recommendations",
   universities: "Universities",
