@@ -7,9 +7,9 @@ import { cn, formatDate } from "@/lib/utils";
 import { Badge, Card, PageHeader, buttonClass } from "@/components/ui";
 import { SourceBadge } from "@/components/source-badge";
 import type { Guide, Profile, RoadmapTask, University } from "@/lib/types";
-import { DeleteButton, InviteForm, QuestionGenerator, QuestionImporter, TaskForm, UserRow } from "./admin-client";
+import { DeleteButton, InviteForm, ResultForm, QuestionGenerator, QuestionImporter, TaskForm, UserRow } from "./admin-client";
 import { SAT_TAXONOMY, type Section } from "@/lib/sat";
-import { deleteGuide, deleteTask, removeInvite } from "@/app/actions/admin";
+import { deleteGuide, deleteResult, deleteTask, removeInvite } from "@/app/actions/admin";
 
 export const metadata = { title: "Content & users" };
 
@@ -18,6 +18,7 @@ const TABS = [
   ["tasks", "Roadmap tasks"],
   ["questions", "Question bank"],
   ["universities", "Universities"],
+  ["results", "Admission results"],
   ["users", "Users"],
 ] as const;
 
@@ -41,6 +42,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       {tab === "questions" && <QuestionsTab supabase={supabase} />}
       {tab === "universities" && <UniversitiesTab supabase={supabase} />}
       {tab === "users" && <UsersTab supabase={supabase} />}
+      {tab === "results" && <ResultsTab supabase={supabase} />}
     </>
   );
 }
@@ -100,7 +102,7 @@ async function TasksTab({ supabase }: { supabase: Client }) {
 }
 
 async function UniversitiesTab({ supabase }: { supabase: Client }) {
-  const { data } = await supabase.from("universities").select("id, name, country, world_rank, deadline_status, last_reviewed").order("world_rank");
+  const { data } = await supabase.from("universities").select("id, name, country, world_rank, deadline_status, last_reviewed").eq("curated", true).order("world_rank");
   return (
     <div className="space-y-3">
       <Link href="/admin/universities/new" className={buttonClass("primary", "sm")}>Add university</Link>
@@ -184,6 +186,28 @@ async function QuestionsTab({ supabase }: { supabase: Client }) {
         <QuestionGenerator skills={skills} />
         <QuestionImporter />
       </div>
+    </div>
+  );
+}
+
+async function ResultsTab({ supabase }: { supabase: Client }) {
+  const [{ data: results }, { data: unis }] = await Promise.all([
+    supabase.from("admission_results").select("*").order("created_at", { ascending: false }),
+    supabase.from("universities").select("name").order("name").limit(3000),
+  ]);
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+      <Card className="h-fit divide-y divide-line">
+        {(results ?? []).map((r) => (
+          <div key={r.id} className="flex items-center gap-3 px-5 py-2.5 text-sm">
+            <span className="flex-1 truncate"><strong>{r.university_name}</strong> · {r.student_name}{r.class_year ? ` · ${r.class_year}` : ""}</span>
+            {r.scholarship && <Badge tone="emerald">{r.scholarship}</Badge>}
+            <DeleteButton action={deleteResult.bind(null, r.id)} label={`${r.student_name} – ${r.university_name}`} />
+          </div>
+        ))}
+        {!results?.length && <p className="px-5 py-6 text-sm text-slate-500">No results yet. Admits you add appear at the top of the Universities page.</p>}
+      </Card>
+      <ResultForm universities={(unis ?? []).map((u) => u.name)} />
     </div>
   );
 }

@@ -169,6 +169,32 @@ export interface University {
   deadline_status: "confirmed" | "estimated";
   cycle: string;
   last_reviewed: string;
+  curated: boolean;
+  state: string | null;
+  ownership: "public" | "private" | null;
+  acceptance_rate: number | null;
+  sat_avg: number | null;
+  sat_25: number | null;
+  sat_75: number | null;
+  act_mid: number | null;
+  undergrad_size: number | null;
+  tuition_out_of_state: number | null;
+  cost_of_attendance: number | null;
+  intl_share: number | null;
+  grad_rate: number | null;
+  median_earnings: number | null;
+  ielts_min: number | null;
+  toefl_min: number | null;
+  stats_source: string | null;
+}
+
+export interface AdmissionResult {
+  id: string;
+  student_name: string;
+  university_name: string;
+  class_year: number | null;
+  scholarship: string | null;
+  note: string | null;
 }
 
 export type ApplicationStatus = "researching" | "applying" | "submitted" | "admitted" | "waitlisted" | "rejected";

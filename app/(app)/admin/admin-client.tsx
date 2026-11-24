@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
-import { addTask, inviteStaff, updateUser } from "@/app/actions/admin";
+import { addResult, addTask, inviteStaff, updateUser } from "@/app/actions/admin";
 import { generateQuestions, importQuestions } from "@/app/actions/practice";
 import { Button, Card, CardHeader, Input, Label, Select, Textarea } from "@/components/ui";
 import { GRADES, TASK_CATEGORIES } from "@/lib/constants";
@@ -221,6 +221,54 @@ export function QuestionImporter() {
         </Button>
         {message && <p className="text-sm text-slate-600">{message}</p>}
       </div>
+    </Card>
+  );
+}
+
+export function ResultForm({ universities }: { universities: string[] }) {
+  const [pending, start] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+  const ref = useRef<HTMLFormElement>(null);
+  return (
+    <Card className="h-fit">
+      <CardHeader title="Add an admission result" description="Shown on the Universities page to motivate students. Get the student's permission first." />
+      <form
+        ref={ref}
+        className="space-y-3 p-5"
+        action={(form) =>
+          start(async () => {
+            const res = await addResult(form);
+            setMessage(res?.error ?? "Added.");
+            if (!res?.error) ref.current?.reset();
+          })
+        }
+      >
+        <div>
+          <Label htmlFor="student_name">Student (as it should appear)</Label>
+          <Input id="student_name" name="student_name" placeholder="e.g. Munkh-Erdene A." required />
+        </div>
+        <div>
+          <Label htmlFor="university_name">University</Label>
+          <Input id="university_name" name="university_name" list="university-names" required />
+          <datalist id="university-names">{universities.map((u) => <option key={u} value={u} />)}</datalist>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label htmlFor="class_year">Class of</Label>
+            <Input id="class_year" name="class_year" type="number" min={2000} max={2100} placeholder="2030" />
+          </div>
+          <div>
+            <Label htmlFor="scholarship">Scholarship</Label>
+            <Input id="scholarship" name="scholarship" placeholder="Full ride" />
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="note">Note</Label>
+          <Input id="note" name="note" placeholder="Early Decision, CS major" />
+        </div>
+        <Button type="submit" disabled={pending}>Add</Button>
+        {message && <p className="text-xs text-slate-500">{message}</p>}
+      </form>
     </Card>
   );
 }

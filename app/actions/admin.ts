@@ -78,6 +78,8 @@ export async function saveUniversity(form: FormData) {
     region: String(form.get("region")),
     city: text("city"),
     world_rank: Number(form.get("world_rank")) || null,
+    ielts_min: Number(form.get("ielts_min")) || null,
+    toefl_min: Number(form.get("toefl_min")) || null,
     rank_confirmed: form.get("rank_confirmed") === "on",
     platform: text("platform"),
     deadlines: parseJson<Deadline[]>(form.get("deadlines"), []),
@@ -88,6 +90,7 @@ export async function saveUniversity(form: FormData) {
     notes: text("notes"),
     website: text("website"),
     deadline_status: form.get("deadline_status") === "confirmed" ? "confirmed" : "estimated",
+    curated: true,
     last_reviewed: new Date().toISOString().slice(0, 10),
   };
 
@@ -124,4 +127,31 @@ export async function removeInvite(email: string) {
   const { supabase } = await authedClient();
   await supabase.from("staff_invites").delete().eq("email", email);
   revalidatePath("/admin");
+}
+
+export async function addResult(form: FormData) {
+  const { supabase, userId } = await authedClient();
+  const studentName = String(form.get("student_name") ?? "").trim();
+  const universityName = String(form.get("university_name") ?? "").trim();
+  if (!studentName || !universityName) return { error: "Add the student and the university." };
+  const { data: uni } = await supabase.from("universities").select("id").eq("name", universityName).maybeSingle();
+  const { error } = await supabase.from("admission_results").insert({
+    student_name: studentName,
+    university_name: universityName,
+    university_id: uni?.id ?? null,
+    class_year: Number(form.get("class_year")) || null,
+    scholarship: String(form.get("scholarship") ?? "").trim() || null,
+    note: String(form.get("note") ?? "").trim() || null,
+    created_by: userId,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin");
+  revalidatePath("/universities");
+}
+
+export async function deleteResult(id: string) {
+  const { supabase } = await authedClient();
+  await supabase.from("admission_results").delete().eq("id", id);
+  revalidatePath("/admin");
+  revalidatePath("/universities");
 }

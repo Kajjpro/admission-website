@@ -1,7 +1,8 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui";
-import type { University, UserUniversity } from "@/lib/types";
+import type { AdmissionResult, University, UserUniversity } from "@/lib/types";
+import { AdmissionResults } from "./admission-results";
 import { UniversityBrowser } from "./university-browser";
 
 export const metadata = { title: "Universities" };
@@ -11,17 +12,25 @@ export default async function UniversitiesPage({ searchParams }: { searchParams:
   const { q } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: universities }, { data: list }] = await Promise.all([
-    supabase.from("universities").select("*").order("world_rank", { nullsFirst: false }),
+  const [{ data: universities }, { data: list }, { data: scores }, { data: results }] = await Promise.all([
+    supabase.from("universities").select("*").order("world_rank", { nullsFirst: false }).limit(3000),
     supabase.from("user_universities").select("id, university_id, round, status, notes").eq("user_id", profile.id),
+    supabase.from("test_scores").select("test_type, total_score").eq("user_id", profile.id),
+    supabase.from("admission_results").select("*").order("class_year", { ascending: false }).order("created_at", { ascending: false }).limit(60),
   ]);
+
+  const best = (type: string) => {
+    const values = (scores ?? []).filter((s) => s.test_type === type).map((s) => Number(s.total_score));
+    return values.length ? Math.max(...values) : null;
+  };
 
   return (
     <>
       <PageHeader
-        title="Universities & deadlines"
-        description="Fall 2027 entry deadlines for top universities worldwide, ranked by Times Higher Education. Dates marked “estimated” follow last year's pattern; always confirm on the official site before you apply."
+        title="Universities"
+        description={`${universities?.length ?? 0} universities. Acceptance rates, SAT ranges and costs for U.S. colleges come from the U.S. Department of Education. Deadlines and requirements are researched for ${(universities ?? []).filter((u) => u.curated).length} top universities worldwide.`}
       />
+      <AdmissionResults results={(results ?? []) as AdmissionResult[]} />
       <UniversityBrowser
         universities={(universities ?? []) as University[]}
         myList={(list ?? []) as UserUniversity[]}
@@ -29,6 +38,8 @@ export default async function UniversitiesPage({ searchParams }: { searchParams:
         isStudent={profile.role === "student"}
         isAdmin={profile.role === "admin"}
         targetRegions={profile.target_regions}
+        bestSat={best("SAT")}
+        bestIelts={best("IELTS")}
       />
     </>
   );

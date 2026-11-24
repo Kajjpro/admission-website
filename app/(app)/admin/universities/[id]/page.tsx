@@ -81,6 +81,16 @@ export default async function EditUniversityPage({ params }: { params: Promise<{
               Each entry: {"{ \"round\": \"Early Action\", \"date\": \"2026-11-01\" }"}. Use {"\"date\": null"} with a {"\"window\""} when no date is published.
             </p>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="ielts_min">IELTS minimum</Label>
+              <Input id="ielts_min" name="ielts_min" type="number" step={0.5} min={0} max={9} defaultValue={uni?.ielts_min ?? ""} />
+            </div>
+            <div>
+              <Label htmlFor="toefl_min">TOEFL minimum</Label>
+              <Input id="toefl_min" name="toefl_min" type="number" min={0} max={120} defaultValue={uni?.toefl_min ?? ""} />
+            </div>
+          </div>
           {text("testing", "Testing")}
           {text("english", "English requirement")}
           {text("app_fee", "Application fee")}
