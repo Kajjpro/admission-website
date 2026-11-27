@@ -1,8 +1,8 @@
 import { MessageSquare } from "lucide-react";
 import { Badge, Card } from "@/components/ui";
-import { ESSAY_TYPES, IMPACT_CATEGORIES, RECOMMENDER_STATUS, REVIEW_STATUS } from "@/lib/constants";
+import { APPLICATION_STATUS, ESSAY_TYPES, IMPACT_CATEGORIES, RECOMMENDER_STATUS, REVIEW_STATUS } from "@/lib/constants";
 import { HONOR_LEVELS, type ProfileSnapshot, type ReviewSectionKey } from "@/lib/application";
-import type { EssayType, ImpactCategory, RecommenderStatus, ReviewStatus } from "@/lib/types";
+import type { ApplicationStatus, EssayType, ImpactCategory, RecommenderStatus, ReviewStatus } from "@/lib/types";
 
 function Section({
   title,
@@ -121,6 +121,19 @@ export function SnapshotView({ snapshot, feedback = {} }: { snapshot: ProfileSna
           ))}
         </ul>
       </Section>
+
+      {s.universities && (
+        <Section title={`University list (${s.universities.length})`} feedback={feedback.universities} empty={!s.universities.length}>
+          <ul className="divide-y divide-line">
+            {s.universities.map((u, i) => (
+              <li key={i} className="flex items-center gap-3 py-2">
+                <span className="flex-1">{u.name}<span className="text-slate-500"> · {u.country}{u.round ? ` · ${u.round}` : ""}</span></span>
+                <Badge tone={APPLICATION_STATUS[u.status as ApplicationStatus]?.tone}>{APPLICATION_STATUS[u.status as ApplicationStatus]?.label ?? u.status}</Badge>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
     </div>
   );
 }

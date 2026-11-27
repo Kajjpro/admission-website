@@ -178,7 +178,7 @@ export function SendForReview({
   pending: hasPending,
   completeness,
 }: {
-  counselors: { id: string; full_name: string | null }[];
+  counselors: { id: string; full_name: string | null; email?: string | null }[];
   defaultCounselorId: string | null;
   pending: boolean;
   completeness: number;
@@ -207,7 +207,7 @@ export function SendForReview({
       >
         <Select value={counselorId} onChange={(e) => setCounselorId(e.target.value)} aria-label="Counsellor">
           <option value="">Choose a counsellor</option>
-          {counselors.map((c) => <option key={c.id} value={c.id}>{c.full_name ?? "Unnamed"}</option>)}
+          {counselors.map((c) => <option key={c.id} value={c.id}>{c.full_name ?? c.email ?? "Counsellor"}</option>)}
         </Select>
         <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="What should they look at? e.g. Is my spike clear? Which activities should I cut?" />
         {completeness < 0.5 && <p className="text-xs text-amber-700">Your profile is less than half complete. Counsellors can help more once more is filled in.</p>}

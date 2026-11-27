@@ -53,6 +53,7 @@ const STUDENT_NAV: NavItem[] = [
 
 const STAFF_NAV: NavItem[] = [
   { href: "/counselor", label: "Counsellor dashboard", icon: Inbox, group: "Counselling" },
+  { href: "/counselor/teachers", label: "Teachers", icon: Mail, group: "Counselling" },
   { href: "/admissions", label: "How admissions works", icon: Compass, group: "Explore" },
   { href: "/practice", label: "SAT Practice", icon: ListChecks, group: "Explore" },
   { href: "/universities", label: "Universities", icon: Building2, group: "Explore" },
@@ -69,7 +70,16 @@ export function navFor(role: Role): NavItem[] {
   return STAFF_NAV;
 }
 
+/** The longest nav href that prefixes the path wins, so /counselor/teachers doesn't also light up /counselor. */
+function isActive(items: NavItem[], href: string, pathname: string) {
+  const matches = (h: string) => pathname === h || pathname.startsWith(`${h}/`);
+  if (!matches(href)) return false;
+  return !items.some((i) => i.href.length > href.length && matches(i.href));
+}
+
 const LABELS: Record<string, string> = {
+  teachers: "Teachers",
+  "brag-sheet": "Brag sheet",
   dashboard: "Dashboard",
   essays: "Essay Studio",
   guides: "Guides",
@@ -143,7 +153,7 @@ export function AppShell({
 
         <nav className="flex-1 space-y-0.5 overflow-y-auto p-2">
           {nav.map((item, index) => {
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const active = isActive(nav, item.href, pathname);
             const heading = index === 0 || nav[index - 1]!.group !== item.group;
             return (
               <div key={item.href}>
@@ -279,7 +289,7 @@ function MobileNav({ items, pathname }: { items: NavItem[]; pathname: string }) 
   return (
     <nav className="flex gap-1 overflow-x-auto border-b border-line bg-white px-3 py-2 md:hidden">
       {items.map((item) => {
-        const active = pathname.startsWith(item.href);
+        const active = isActive(items, item.href, pathname);
         return (
           <Link
             key={item.href}

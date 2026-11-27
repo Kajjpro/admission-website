@@ -11,7 +11,7 @@ export function OnboardingForm({
   counselors,
 }: {
   profile: Profile;
-  counselors: { id: string; full_name: string | null }[];
+  counselors: { id: string; full_name: string | null; email?: string | null }[];
 }) {
   const [state, action, pending] = useActionState(completeOnboarding, undefined);
   const isStudent = profile.role === "student";
@@ -59,7 +59,7 @@ export function OnboardingForm({
               <option value="">I'll choose later</option>
               {counselors.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.full_name ?? "Unnamed counselor"}
+                  {c.full_name ?? c.email ?? "Counsellor"}
                 </option>
               ))}
             </Select>

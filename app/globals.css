@@ -89,3 +89,15 @@
 .prose-guide {
   @apply prose prose-slate max-w-none prose-headings:font-serif prose-headings:font-medium prose-h2:text-2xl prose-a:text-accent prose-blockquote:border-l-accent prose-blockquote:font-normal prose-blockquote:not-italic prose-th:text-left;
 }
+
+/* Printing a brag sheet from inside the app: drop the app chrome. */
+@media print {
+  aside,
+  header,
+  nav {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+}

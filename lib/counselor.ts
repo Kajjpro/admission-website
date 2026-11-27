@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { nextDeadline } from "./universities";
+import { daysUntil } from "./utils";
 import type { Deadline } from "./types";
 
 export interface StudentSummary {
@@ -20,7 +21,20 @@ export interface StudentSummary {
   next: { university: string; round: string; date: string } | null;
   lastActive: string | null;
   practicedThisWeek: number;
+  openTasks: number;
+  overdueTasks: number;
+  /** Short reasons this student may need a nudge. */
+  flags: FlagKey[];
 }
+
+export const FLAG_LABELS = {
+  deadline: "Deadline in 14 days",
+  overdue: "Overdue task",
+  idle: "No practice this week",
+  letters: "Letters not requested",
+  spike: "No spike yet",
+} as const;
+export type FlagKey = keyof typeof FLAG_LABELS;
 
 /** One row per student with what a counsellor needs at a glance. Relies on RLS: counsellors read assigned students only. */
 export async function getStudentSummaries(supabase: SupabaseClient, students: { id: string; full_name: string | null; grade_level: number | null; school_name: string | null; intended_major: string | null; spike_statement: string | null; target_regions: string[] }[]): Promise<StudentSummary[]> {
@@ -28,13 +42,15 @@ export async function getStudentSummaries(supabase: SupabaseClient, students: { 
   const ids = students.map((s) => s.id);
   const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
 
-  const [scores, activities, recs, essays, lists, attempts] = await Promise.all([
+  const today = new Date().toISOString().slice(0, 10);
+  const [scores, activities, recs, essays, lists, attempts, tasks] = await Promise.all([
     supabase.from("test_scores").select("user_id, test_type, total_score").in("user_id", ids),
     supabase.from("activities").select("user_id").in("user_id", ids),
     supabase.from("recommenders").select("user_id, status").in("user_id", ids),
     supabase.from("user_essays").select("user_id").in("user_id", ids).not("submitted_at", "is", null),
     supabase.from("user_universities").select("user_id, round, universities(name, deadlines)").in("user_id", ids),
     supabase.from("sat_attempts").select("user_id, created_at").in("user_id", ids).gte("created_at", weekAgo).order("created_at", { ascending: false }).limit(1000),
+    supabase.from("counselor_tasks").select("student_id, due_date").in("student_id", ids).is("done_at", null),
   ]);
 
   const count = (rows: { user_id: string }[] | null, id: string) => (rows ?? []).filter((r) => r.user_id === id).length;
@@ -52,6 +68,15 @@ export async function getStudentSummaries(supabase: SupabaseClient, students: { 
       .sort((a, b) => a.d!.date!.localeCompare(b.d!.date!))[0];
     const mine = (attempts.data ?? []).filter((a) => a.user_id === s.id);
     const studentRecs = (recs.data ?? []).filter((r) => r.user_id === s.id);
+    const myTasks = (tasks.data ?? []).filter((t) => t.student_id === s.id);
+    const overdueTasks = myTasks.filter((t) => t.due_date && t.due_date < today).length;
+    const nextDays = upcoming?.d?.date ? daysUntil(upcoming.d.date) : null;
+    const flags: FlagKey[] = [];
+    if (nextDays !== null && nextDays <= 14) flags.push("deadline");
+    if (overdueTasks) flags.push("overdue");
+    if (!mine.length) flags.push("idle");
+    if ((s.grade_level ?? 0) >= 11 && studentRecs.filter((r) => r.status !== "not_asked").length < 2) flags.push("letters");
+    if (!s.spike_statement) flags.push("spike");
     return {
       id: s.id,
       name: s.full_name ?? "Unnamed student",
@@ -70,6 +95,9 @@ export async function getStudentSummaries(supabase: SupabaseClient, students: { 
       next: upcoming ? { university: upcoming.name, round: upcoming.d!.round, date: upcoming.d!.date! } : null,
       lastActive: mine[0]?.created_at ?? null,
       practicedThisWeek: mine.length,
+      openTasks: myTasks.length,
+      overdueTasks,
+      flags,
     };
   });
 }

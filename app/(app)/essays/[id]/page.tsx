@@ -18,7 +18,7 @@ export default async function EssayPage({ params }: { params: Promise<{ id: stri
   const help = ESSAY_HELP[(essay as Essay).essay_type];
   const [feedback, counselors, guides, submission] = await Promise.all([
     getFeedback(id),
-    supabase.from("profiles").select("id, full_name").in("role", ["counselor", "admin"]).order("full_name"),
+    supabase.from("profiles").select("id, full_name, email").in("role", ["counselor", "admin"]).order("full_name"),
     supabase
       .from("guides")
       .select("slug, title, summary, category, source_attribution, reading_time_mins")

@@ -26,7 +26,7 @@ export function EssayEditor({
 }: {
   essay: Essay;
   feedback: Feedback[];
-  counselors: { id: string; full_name: string | null }[];
+  counselors: { id: string; full_name: string | null; email?: string | null }[];
   defaultCounselorId: string | null;
   guides: Guide[];
   latestSubmission: EssaySubmission | null;
@@ -268,7 +268,7 @@ function ReviewPanel({
   dirty,
 }: {
   essay: Essay;
-  counselors: { id: string; full_name: string | null }[];
+  counselors: { id: string; full_name: string | null; email?: string | null }[];
   defaultCounselorId: string | null;
   latestSubmission: EssaySubmission | null;
   dirty: boolean;
@@ -338,7 +338,7 @@ function ReviewPanel({
           <Select id="counselor" value={counselorId} onChange={(e) => setCounselorId(e.target.value)}>
             <option value="">Choose a counselor</option>
             {counselors.map((c) => (
-              <option key={c.id} value={c.id}>{c.full_name ?? "Unnamed"}</option>
+              <option key={c.id} value={c.id}>{c.full_name ?? c.email ?? "Counsellor"}</option>
             ))}
           </Select>
         </div>

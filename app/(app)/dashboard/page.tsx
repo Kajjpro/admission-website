@@ -9,10 +9,11 @@ import { ReadinessPanel } from "./readiness-panel";
 import { nextDeadline } from "@/lib/universities";
 import { daysUntil, formatDate, formatDateTime } from "@/lib/utils";
 import { Badge, Card, CardHeader } from "@/components/ui";
-import type { Essay, RoadmapTask, TaskStatus, University } from "@/lib/types";
+import type { CounselorTask, Essay, RoadmapTask, TaskStatus, University } from "@/lib/types";
 import { getPracticeStats } from "@/lib/practice";
 import { TodayCard } from "@/components/practice/today-card";
 import { RoadmapChecklist } from "./roadmap-checklist";
+import { CounselorTasks } from "./counselor-tasks";
 
 export const metadata = { title: "Dashboard" };
 
@@ -23,7 +24,8 @@ export default async function DashboardPage() {
   const grade = await getGradeView(profile);
   const supabase = await createClient();
 
-  const [practice, tasks, progress, essays, scores, activities, recs, list, honors] = await Promise.all([
+  const recentFeedback = new Date(Date.now() - 14 * 86_400_000).toISOString();
+  const [practice, tasks, progress, essays, scores, activities, recs, list, honors, assigned, feedback] = await Promise.all([
     getPracticeStats(supabase, profile.id),
     supabase.from("roadmap_tasks").select("*").eq("grade_level", grade).order("sort_order"),
     supabase.from("user_task_progress").select("task_id, status").eq("user_id", profile.id),
@@ -33,6 +35,12 @@ export default async function DashboardPage() {
     supabase.from("recommenders").select("status").eq("user_id", profile.id),
     supabase.from("user_universities").select("round, universities(id, name, country, deadlines)").eq("user_id", profile.id),
     supabase.from("honors").select("id", { count: "exact", head: true }).eq("user_id", profile.id),
+    // Open tasks plus anything finished in the last week, newest due first.
+    supabase.from("counselor_tasks").select("*").eq("student_id", profile.id)
+      .or(`done_at.is.null,done_at.gte.${new Date(Date.now() - 7 * 86_400_000).toISOString()}`)
+      .order("due_date", { ascending: true, nullsFirst: false }),
+    supabase.from("profile_reviews").select("reviewed_at").eq("student_id", profile.id).eq("status", "reviewed")
+      .gte("reviewed_at", recentFeedback).order("reviewed_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
 
   const statusByTask = Object.fromEntries((progress.data ?? []).map((p) => [p.task_id, p.status as TaskStatus]));
@@ -74,6 +82,8 @@ export default async function DashboardPage() {
           Showing the grade {grade} roadmap{grade !== profile.grade_level && profile.grade_level ? ` (you're in grade ${profile.grade_level})` : ""}.
         </p>
       </div>
+
+      <CounselorTasks tasks={(assigned.data ?? []) as CounselorTask[]} feedbackAt={feedback.data?.reviewed_at ?? null} />
 
       <TodayCard stats={practice} goal={profile.daily_goal} />
 

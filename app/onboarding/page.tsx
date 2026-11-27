@@ -12,7 +12,7 @@ export default async function OnboardingPage() {
   const supabase = await createClient();
   const { data: counselors } = await supabase
     .from("profiles")
-    .select("id, full_name")
+    .select("id, full_name, email")
     .in("role", ["counselor", "admin"])
     .order("full_name");
 

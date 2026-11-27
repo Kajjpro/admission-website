@@ -146,6 +146,28 @@ export interface Recommender {
   status: RecommenderStatus;
   due_date: string | null;
   thank_you_sent: boolean;
+  email: string | null;
+  teacher_id: string | null;
+  share_token: string;
+  requested_at: string | null;
+  viewed_at: string | null;
+}
+
+export interface Teacher {
+  id: string;
+  full_name: string;
+  email: string;
+  subject: string | null;
+}
+
+export interface CounselorTask {
+  id: string;
+  student_id: string;
+  title: string;
+  details: string | null;
+  due_date: string | null;
+  done_at: string | null;
+  created_at: string;
 }
 
 export interface Deadline {

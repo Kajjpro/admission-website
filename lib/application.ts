@@ -8,6 +8,7 @@ export const REVIEW_SECTIONS = [
   { key: "honors", label: "Honours" },
   { key: "essays", label: "Essays" },
   { key: "letters", label: "Letters" },
+  { key: "universities", label: "University list" },
 ] as const;
 export type ReviewSectionKey = (typeof REVIEW_SECTIONS)[number]["key"];
 
@@ -28,18 +29,22 @@ export interface ProfileSnapshot {
   honors: { title: string; level: string; grade: number | null; description: string | null }[];
   essays: { title: string; type: string; status: string; words: number; limit: number | null }[];
   letters: { name: string; subject: string | null; status: string }[];
+  /** Absent in snapshots sent before the list was included. */
+  universities?: { name: string; country: string; round: string | null; status: string }[];
 }
 
 /** Collects everything a counsellor needs to review the whole application in one read. */
 export async function buildSnapshot(supabase: SupabaseClient, userId: string): Promise<ProfileSnapshot> {
-  const [{ data: p }, scores, activities, honors, essays, recs] = await Promise.all([
+  const [{ data: p }, scores, activities, honors, essays, recs, list] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", userId).single(),
     supabase.from("test_scores").select("test_type, total_score, is_official").eq("user_id", userId),
     supabase.from("activities").select("*").eq("user_id", userId).order("position_order"),
     supabase.from("honors").select("*").eq("user_id", userId).order("created_at"),
     supabase.from("user_essays").select("title, essay_type, review_status, word_count, word_limit").eq("user_id", userId).order("updated_at", { ascending: false }),
     supabase.from("recommenders").select("teacher_name, subject, status").eq("user_id", userId),
+    supabase.from("user_universities").select("round, status, universities(name, country)").eq("user_id", userId),
   ]);
+  type ListRow = { round: string | null; status: string; universities: { name: string; country: string } | null };
 
   const tests = (["SAT", "IELTS"] as const)
     .map((type) => {
@@ -62,5 +67,9 @@ export async function buildSnapshot(supabase: SupabaseClient, userId: string): P
     honors: (honors.data ?? []).map((h) => ({ title: h.title, level: h.level, grade: h.grade, description: h.description })),
     essays: (essays.data ?? []).map((e) => ({ title: e.title, type: e.essay_type, status: e.review_status, words: e.word_count, limit: e.word_limit })),
     letters: (recs.data ?? []).map((r) => ({ name: r.teacher_name, subject: r.subject, status: r.status })),
+    universities: ((list.data ?? []) as unknown as ListRow[])
+      .filter((r) => r.universities)
+      .map((r) => ({ name: r.universities!.name, country: r.universities!.country, round: r.round, status: r.status }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
   };
 }

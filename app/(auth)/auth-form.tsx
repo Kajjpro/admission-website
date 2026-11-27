@@ -81,7 +81,10 @@ function Form({ mode }: { mode: "login" | "signup" }) {
           <Input id="email" name="email" type="email" required autoComplete="email" />
         </div>
         <div>
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-baseline justify-between">
+            <Label htmlFor="password">Password</Label>
+            {mode === "login" && <Link href="/forgot-password" className="text-xs text-accent">Forgot password?</Link>}
+          </div>
           <Input
             id="password"
             name="password"

@@ -1,15 +1,16 @@
 import Link from "next/link";
-import { ArrowRight, CalendarClock, FileText, IdCard, Users } from "lucide-react";
+import { ArrowRight, CalendarClock, Download, FileText, IdCard, ListTodo, Search, Users } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
-import { getStudentSummaries } from "@/lib/counselor";
+import { FLAG_LABELS, getStudentSummaries, type FlagKey } from "@/lib/counselor";
 import { createClient } from "@/lib/supabase/server";
 import { daysUntil, formatDate, formatDateTime } from "@/lib/utils";
-import { Badge, Card, CardHeader, EmptyState } from "@/components/ui";
+import { Badge, Card, CardHeader, EmptyState, Input, Select, buttonClass } from "@/components/ui";
 
 export const metadata = { title: "Counsellor dashboard" };
 
-export default async function CounselorDashboard() {
+export default async function CounselorDashboard({ searchParams }: { searchParams: Promise<{ q?: string; grade?: string; flag?: string }> }) {
   const profile = await requireStaff();
+  const { q = "", grade = "", flag = "" } = await searchParams;
   const supabase = await createClient();
   const isAdmin = profile.role === "admin";
 
@@ -33,8 +34,37 @@ export default async function CounselorDashboard() {
     .eq("status", "submitted");
   if (!isAdmin) reviewQuery = reviewQuery.eq("counselor_id", profile.id);
 
-  const [{ data: students }, { data: essays }, { data: reviews }] = await Promise.all([studentQuery, essayQuery, reviewQuery]);
+  const today = new Date().toISOString().slice(0, 10);
+  const in30 = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
+  // RLS limits both to the counsellor's own students (admins see everyone).
+  const lettersQuery = supabase
+    .from("recommenders")
+    .select("id, user_id, teacher_name, due_date, status, viewed_at, student:profiles!recommenders_user_id_fkey(full_name)")
+    .neq("status", "submitted")
+    .lte("due_date", in30)
+    .order("due_date");
+  const overdueQuery = supabase
+    .from("counselor_tasks")
+    .select("id, student_id, title, due_date, student:profiles!counselor_tasks_student_id_fkey(full_name)")
+    .is("done_at", null)
+    .lt("due_date", today)
+    .order("due_date");
+
+  const [{ data: students }, { data: essays }, { data: reviews }, { data: letters }, { data: overdue }] = await Promise.all([studentQuery, essayQuery, reviewQuery, lettersQuery, overdueQuery]);
   const summaries = await getStudentSummaries(supabase, students ?? []);
+  const mine = new Set(summaries.map((s) => s.id));
+  type LetterRow = { id: string; user_id: string; teacher_name: string; due_date: string; status: string; viewed_at: string | null; student: { full_name: string | null } | null };
+  type OverdueRow = { id: string; student_id: string; title: string; due_date: string; student: { full_name: string | null } | null };
+  const lettersDue = ((letters ?? []) as unknown as LetterRow[]).filter((l) => mine.has(l.user_id));
+  const overdueTasks = ((overdue ?? []) as unknown as OverdueRow[]).filter((t) => mine.has(t.student_id));
+
+  const needle = q.trim().toLowerCase();
+  const filtered = summaries.filter(
+    (s) =>
+      (!needle || [s.name, s.school, s.major].some((v) => v?.toLowerCase().includes(needle))) &&
+      (!grade || String(s.grade) === grade) &&
+      (!flag || (flag === "any" ? s.flags.length > 0 : s.flags.includes(flag as FlagKey))),
+  );
 
   type EssayRow = { id: string; title: string; submitted_at: string; needs_in_person_meeting: boolean; meeting_at: string | null; review_status: string; student: { full_name: string | null } | null };
   type ReviewRow = { id: string; created_at: string; student: { full_name: string | null } | null };
@@ -59,6 +89,7 @@ export default async function CounselorDashboard() {
     { label: "Essays waiting", value: essayRows.filter((e) => e.review_status === "submitted").length, icon: FileText },
     { label: "Profiles waiting", value: reviewRows.length, icon: IdCard },
     { label: "Meetings ahead", value: meetings.length, icon: CalendarClock },
+    { label: "Overdue tasks", value: overdueTasks.length, icon: ListTodo },
   ];
 
   return (
@@ -68,7 +99,7 @@ export default async function CounselorDashboard() {
         <p className="mt-1 text-sm text-slate-500">Here's what your students need from you.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {stats.map((s) => (
           <Card key={s.label} className="p-5">
             <p className="flex items-center gap-1.5 text-xs text-slate-500"><s.icon className="size-3.5" />{s.label}</p>
@@ -122,6 +153,41 @@ export default async function CounselorDashboard() {
               <p className="px-5 py-5 text-sm text-slate-500">No meetings scheduled.</p>
             )}
           </Card>
+          {overdueTasks.length > 0 && (
+            <Card>
+              <CardHeader title="Overdue tasks" />
+              <ul className="divide-y divide-line">
+                {overdueTasks.slice(0, 8).map((t) => (
+                  <li key={t.id}>
+                    <Link href={`/counselor/students/${t.student_id}`} className="block px-5 py-3 hover:bg-slate-50">
+                      <p className="truncate text-sm font-medium">{t.title}</p>
+                      <p className="text-xs text-slate-500">{t.student?.full_name} · <span className="text-rose-600">was due {formatDate(t.due_date, { year: undefined })}</span></p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+          <Card>
+            <CardHeader title="Letters due in 30 days" description="Not submitted yet" />
+            {lettersDue.length ? (
+              <ul className="divide-y divide-line">
+                {lettersDue.map((l) => (
+                  <li key={l.id}>
+                    <Link href={`/counselor/students/${l.user_id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{l.student?.full_name} · {l.teacher_name}</p>
+                        <p className="text-xs text-slate-500">{l.status === "not_asked" ? "Not asked yet" : l.viewed_at ? "Teacher opened the brag sheet" : "Teacher hasn't opened it"}</p>
+                      </div>
+                      <Badge tone={daysUntil(l.due_date) <= 7 ? "rose" : "amber"}>{daysUntil(l.due_date) < 0 ? "Late" : `${daysUntil(l.due_date)}d`}</Badge>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="px-5 py-5 text-sm text-slate-500">No letters due soon.</p>
+            )}
+          </Card>
           <Card>
             <CardHeader title="Student deadlines in 30 days" />
             {deadlines.length ? (
@@ -144,35 +210,71 @@ export default async function CounselorDashboard() {
       </div>
 
       <Card className="overflow-x-auto">
-        <CardHeader title="Students" description="Live from each student's own pages. Essays show only after a student shares them." />
-        {summaries.length ? (
-          <table className="w-full min-w-[860px] text-sm">
+        <CardHeader
+          title={`Students${filtered.length !== summaries.length ? ` (${filtered.length} of ${summaries.length})` : ` (${summaries.length})`}`}
+          description="Live from each student's own pages. Click a name to open their profile, tasks and notes."
+          action={
+            <a href="/counselor/export" className={buttonClass("secondary", "sm")}>
+              <Download className="size-3.5" />
+              CSV
+            </a>
+          }
+        />
+        <form className="flex flex-wrap gap-2 border-b border-line px-5 py-3">
+          <div className="relative min-w-48 flex-1">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Input name="q" defaultValue={q} placeholder="Search name, school, major" className="pl-8" />
+          </div>
+          <Select name="grade" defaultValue={grade} className="w-32" aria-label="Grade">
+            <option value="">All grades</option>
+            {[9, 10, 11, 12].map((g) => <option key={g} value={g}>Grade {g}</option>)}
+          </Select>
+          <Select name="flag" defaultValue={flag} className="w-52" aria-label="Needs attention">
+            <option value="">Everyone</option>
+            <option value="any">Needs attention</option>
+            {Object.entries(FLAG_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </Select>
+          <button className={buttonClass("primary")}>Filter</button>
+          {(q || grade || flag) && <Link href="/counselor" className={buttonClass("ghost")}>Clear</Link>}
+        </form>
+        {filtered.length ? (
+          <table className="w-full min-w-[980px] text-sm">
             <thead className="bg-slate-50 text-left text-xs text-slate-500">
               <tr>
-                {["Student", "SAT", "IELTS", "Activities", "Letters", "Essays shared", "Universities", "Next deadline", "Practice (7d)"].map((h) => (
+                {["Student", "Flags", "SAT", "IELTS", "Activities", "Letters", "Essays shared", "Tasks", "Next deadline", "Practice (7d)"].map((h) => (
                   <th key={h} className="px-4 py-2 font-medium">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {summaries.map((s) => (
+              {filtered.map((s) => (
                 <tr key={s.id}>
                   <td className="px-4 py-3">
                     <Link href={`/counselor/students/${s.id}`} className="font-medium text-accent hover:underline">{s.name}</Link>
                     <p className="text-xs text-slate-500">{[s.grade ? `Grade ${s.grade}` : null, s.school, s.major].filter(Boolean).join(" · ") || "Profile not filled in"}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex max-w-52 flex-wrap gap-1">
+                      {s.flags.map((f) => (
+                        <Badge key={f} tone={f === "deadline" || f === "overdue" ? "rose" : "amber"}>{FLAG_LABELS[f]}</Badge>
+                      ))}
+                      {!s.flags.length && <span className="text-xs text-slate-400">On track</span>}
+                    </div>
                   </td>
                   <td className="px-4 py-3 tabular-nums">{s.bestSat ?? "—"}</td>
                   <td className="px-4 py-3 tabular-nums">{s.bestIelts ?? "—"}</td>
                   <td className="px-4 py-3 tabular-nums">{s.activities}/10</td>
                   <td className="px-4 py-3 tabular-nums">{s.lettersSubmitted}/{Math.max(2, s.letters)}</td>
                   <td className="px-4 py-3 tabular-nums">{s.essaysShared}</td>
-                  <td className="px-4 py-3 tabular-nums">{s.listCount}</td>
+                  <td className={`px-4 py-3 tabular-nums ${s.overdueTasks ? "font-medium text-rose-600" : ""}`}>{s.openTasks ? `${s.openTasks} open` : "—"}</td>
                   <td className="px-4 py-3 text-xs">{s.next ? `${s.next.university} · ${formatDate(s.next.date, { year: undefined })}` : "—"}</td>
                   <td className={`px-4 py-3 tabular-nums ${s.practicedThisWeek ? "" : "text-slate-400"}`}>{s.practicedThisWeek} q</td>
                 </tr>
               ))}
             </tbody>
           </table>
+        ) : summaries.length ? (
+          <p className="px-5 py-8 text-center text-sm text-slate-500">No students match these filters.</p>
         ) : (
           <div className="p-5">
             <EmptyState title="No students yet">Students appear here when they choose you as their counsellor during sign-up or in My application.</EmptyState>

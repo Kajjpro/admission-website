@@ -81,10 +81,12 @@ export async function respondToProfileReview(
     .update({
       overall_feedback: input.overall.trim() || null,
       section_feedback: sections,
-      status: input.markReviewed ? "reviewed" : "submitted",
+      // Saving a draft leaves the status alone, so a counsellor-started draft stays hidden from the student.
+      ...(input.markReviewed ? { status: "reviewed" } : {}),
     })
     .eq("id", id);
   if (error) return { error: error.message };
+  revalidatePath("/counselor/students", "layout");
   revalidatePath(`/counselor/profiles/${id}`);
   revalidatePath("/counselor");
   revalidatePath("/profile");

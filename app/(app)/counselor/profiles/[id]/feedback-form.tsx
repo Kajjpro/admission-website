@@ -11,11 +11,13 @@ export function ProfileFeedbackForm({
   overall: initialOverall,
   sections: initialSections,
   reviewed,
+  draft = false,
 }: {
   id: string;
   overall: string;
   sections: Partial<Record<ReviewSectionKey, string>>;
   reviewed: boolean;
+  draft?: boolean;
 }) {
   const [overall, setOverall] = useState(initialOverall);
   const [sections, setSections] = useState<Record<string, string>>(initialSections as Record<string, string>);
@@ -31,7 +33,7 @@ export function ProfileFeedbackForm({
 
   return (
     <Card>
-      <CardHeader title="Your feedback" description={reviewed ? "Already sent. Edits update what the student sees." : "Comments appear under each section for the student."} />
+      <CardHeader title="Your feedback" description={reviewed ? "Already sent. Edits update what the student sees." : draft ? "Write as much or as little as you like. The student sees it only when you send." : "Comments appear under each section for the student."} />
       <div className="max-h-[calc(100vh-14rem)] space-y-4 overflow-y-auto p-5">
         <div>
           <Label htmlFor="overall">Overall</Label>

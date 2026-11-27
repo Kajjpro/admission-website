@@ -19,7 +19,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const [snapshot, { data: honors }, { data: counselors }, { data: reviews }] = await Promise.all([
     buildSnapshot(supabase, profile.id),
     supabase.from("honors").select("*").eq("user_id", profile.id).order("created_at"),
-    supabase.from("profiles").select("id, full_name").in("role", ["counselor", "admin"]).order("full_name"),
+    supabase.from("profiles").select("id, full_name, email").in("role", ["counselor", "admin"]).order("full_name"),
     supabase
       .from("profile_reviews")
       .select("id, status, student_note, overall_feedback, section_feedback, created_at, reviewed_at, counselor:profiles!profile_reviews_counselor_id_fkey(full_name)")
