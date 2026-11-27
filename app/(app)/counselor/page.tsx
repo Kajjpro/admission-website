@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CalendarClock, Download, FileText, IdCard, ListTodo, Search, Users } from "lucide-react";
+import { ArrowRight, CalendarClock, Download, FileText, IdCard, ListTodo, PenLine, Search, Users } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
 import { FLAG_LABELS, getStudentSummaries, type FlagKey } from "@/lib/counselor";
 import { createClient } from "@/lib/supabase/server";
@@ -50,7 +50,15 @@ export default async function CounselorDashboard({ searchParams }: { searchParam
     .lt("due_date", today)
     .order("due_date");
 
-  const [{ data: students }, { data: essays }, { data: reviews }, { data: letters }, { data: overdue }] = await Promise.all([studentQuery, essayQuery, reviewQuery, lettersQuery, overdueQuery]);
+  let recQuery = supabase
+    .from("counselor_letters")
+    .select("id, status, due_date, requested_at, student:profiles!counselor_letters_student_id_fkey(full_name)")
+    .neq("status", "done");
+  if (!isAdmin) recQuery = recQuery.eq("counselor_id", profile.id);
+
+  const [{ data: students }, { data: essays }, { data: reviews }, { data: letters }, { data: overdue }, { data: toWrite }] = await Promise.all([studentQuery, essayQuery, reviewQuery, lettersQuery, overdueQuery, recQuery]);
+  type ToWriteRow = { id: string; status: string; due_date: string | null; requested_at: string; student: { full_name: string | null } | null };
+  const lettersToWrite = (toWrite ?? []) as unknown as ToWriteRow[];
   const summaries = await getStudentSummaries(supabase, students ?? []);
   const mine = new Set(summaries.map((s) => s.id));
   type LetterRow = { id: string; user_id: string; teacher_name: string; due_date: string; status: string; viewed_at: string | null; student: { full_name: string | null } | null };
@@ -74,6 +82,7 @@ export default async function CounselorDashboard({ searchParams }: { searchParam
   const attention = [
     ...essayRows.filter((e) => e.review_status === "submitted").map((e) => ({ id: e.id, href: `/counselor/essays/${e.id}`, kind: "Essay", title: e.title, who: e.student?.full_name, since: e.submitted_at, meeting: e.needs_in_person_meeting })),
     ...reviewRows.map((r) => ({ id: r.id, href: `/counselor/profiles/${r.id}`, kind: "Profile", title: "Full profile review", who: r.student?.full_name, since: r.created_at, meeting: false })),
+    ...lettersToWrite.map((l) => ({ id: l.id, href: `/counselor/letters/${l.id}`, kind: "Letter", title: l.due_date ? `Recommendation · needed by ${formatDate(l.due_date, { year: undefined })}` : "Recommendation letter", who: l.student?.full_name, since: l.requested_at, meeting: false })),
   ].sort((a, b) => a.since.localeCompare(b.since));
 
   const meetings = essayRows
@@ -88,6 +97,7 @@ export default async function CounselorDashboard({ searchParams }: { searchParam
     { label: isAdmin ? "Students" : "My students", value: summaries.length, icon: Users },
     { label: "Essays waiting", value: essayRows.filter((e) => e.review_status === "submitted").length, icon: FileText },
     { label: "Profiles waiting", value: reviewRows.length, icon: IdCard },
+    { label: "Letters to write", value: lettersToWrite.length, icon: PenLine },
     { label: "Meetings ahead", value: meetings.length, icon: CalendarClock },
     { label: "Overdue tasks", value: overdueTasks.length, icon: ListTodo },
   ];
@@ -99,7 +109,7 @@ export default async function CounselorDashboard({ searchParams }: { searchParam
         <p className="mt-1 text-sm text-slate-500">Here's what your students need from you.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         {stats.map((s) => (
           <Card key={s.label} className="p-5">
             <p className="flex items-center gap-1.5 text-xs text-slate-500"><s.icon className="size-3.5" />{s.label}</p>
@@ -118,7 +128,7 @@ export default async function CounselorDashboard({ searchParams }: { searchParam
                 return (
                   <li key={a.kind + a.id}>
                     <Link href={a.href} className="group flex items-center gap-3 px-5 py-3 hover:bg-slate-50">
-                      <Badge tone={a.kind === "Essay" ? "indigo" : "sky"}>{a.kind}</Badge>
+                      <Badge tone={a.kind === "Essay" ? "indigo" : a.kind === "Letter" ? "emerald" : "sky"}>{a.kind}</Badge>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{a.title}</p>
                         <p className="text-xs text-slate-500">{a.who ?? "Student"}{a.meeting ? " · wants to meet in person" : ""}</p>

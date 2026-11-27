@@ -53,6 +53,7 @@ const STUDENT_NAV: NavItem[] = [
 
 const STAFF_NAV: NavItem[] = [
   { href: "/counselor", label: "Counsellor dashboard", icon: Inbox, group: "Counselling" },
+  { href: "/counselor/letters", label: "Letters to write", icon: PenLine, group: "Counselling" },
   { href: "/counselor/teachers", label: "Teachers", icon: Mail, group: "Counselling" },
   { href: "/admissions", label: "How admissions works", icon: Compass, group: "Explore" },
   { href: "/practice", label: "SAT Practice", icon: ListChecks, group: "Explore" },
@@ -79,6 +80,8 @@ function isActive(items: NavItem[], href: string, pathname: string) {
 
 const LABELS: Record<string, string> = {
   teachers: "Teachers",
+  letters: "Letters to write",
+  print: "Print",
   "brag-sheet": "Brag sheet",
   dashboard: "Dashboard",
   essays: "Essay Studio",

@@ -1,4 +1,4 @@
-import type { Essay, Profile, Recommender, ReviewStatus, TestScore } from "./types";
+import type { Essay, LetterStatus, Profile, Recommender, ReviewStatus, TestScore } from "./types";
 
 /** One readiness ring: its value, what it's made of, and the single next step that raises it. */
 export interface Readiness {
@@ -82,20 +82,24 @@ export function activityReadiness(count: number): Readiness {
   };
 }
 
-export function recReadiness(recs: Pick<Recommender, "status">[]): Readiness {
+/** The counsellor letter is the main one; teacher letters the student adds also count toward the total. */
+export function recReadiness(recs: Pick<Recommender, "status">[], letter: { status: LetterStatus } | null = null): Readiness {
   const points = { not_asked: 0, requested: 0.4, in_progress: 0.7, submitted: 1 };
-  const total = recs.reduce((sum, r) => sum + points[r.status], 0);
+  const letterPoints = { requested: 0.4, writing: 0.7, done: 1 };
+  const total = (letter ? letterPoints[letter.status] : 0) + recs.reduce((sum, r) => sum + points[r.status], 0);
+  const needed = 1 + recs.length;
   const submitted = recs.filter((r) => r.status === "submitted").length;
+  const counsellor = !letter ? "counsellor letter not asked" : letter.status === "done" ? "counsellor letter written" : "counsellor letter in progress";
   return {
     key: "recs",
     label: "Letters",
-    value: (Math.min(total, 2) / 2) * 100,
-    detail: `${submitted} of 2 submitted`,
-    rules: ["Two letters needed", "Requested 40% of a letter", "In progress 70%", "Submitted 100%"],
-    next: recs.length < 2
-      ? { text: "Add the teachers you'll ask", href: "/recommenders" }
-      : submitted < 2
-        ? { text: "Update each letter's status as it moves", href: "/recommenders" }
+    value: (total / needed) * 100,
+    detail: recs.length ? `${counsellor} · ${submitted} of ${recs.length} teacher` : counsellor,
+    rules: ["Your counsellor's letter, plus any teacher letters you add", "Asked 40% of a letter", "Being written 70%", "Finished 100%"],
+    next: !letter
+      ? { text: "Fill in your brag sheet and ask your counsellor for a recommendation", href: "/recommenders" }
+      : submitted < recs.length
+        ? { text: "Update each teacher letter's status as it moves", href: "/recommenders" }
         : null,
   };
 }
@@ -119,7 +123,7 @@ export const PROFILE_CHECKS = (f: ProfileFacts) => [
   { label: "5+ activities", done: f.activities >= 5 },
   { label: "An honour or award", done: f.honors > 0 },
   { label: "An essay draft", done: f.essaysWithWords > 0 },
-  { label: "2 recommenders", done: f.recommenders >= 2 },
+  { label: "Recommendation requested", done: f.recommenders >= 1 },
 ];
 
 export function profileReadiness(f: ProfileFacts): Readiness {

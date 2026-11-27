@@ -236,3 +236,16 @@ export interface UserUniversity {
 }
 
 export type ActionResult = { error?: string } | void;
+
+export type LetterStatus = "requested" | "writing" | "done";
+
+export interface CounselorLetter {
+  id: string;
+  student_id: string;
+  counselor_id: string;
+  status: LetterStatus;
+  student_message: string | null;
+  due_date: string | null;
+  requested_at: string;
+  completed_at: string | null;
+}

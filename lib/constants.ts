@@ -68,6 +68,12 @@ export const RECOMMENDER_STATUS: Record<RecommenderStatus, { label: string; tone
   submitted: { label: "Submitted", tone: "emerald" },
 };
 
+export const LETTER_STATUS: Record<import("./types").LetterStatus, { label: string; student: string; tone: Tone }> = {
+  requested: { label: "New request", student: "Sent to your counsellor", tone: "indigo" },
+  writing: { label: "Writing", student: "Your counsellor is writing it", tone: "amber" },
+  done: { label: "Finished", student: "Written", tone: "emerald" },
+};
+
 export const APPLICATION_STATUS: Record<ApplicationStatus, { label: string; tone: Tone }> = {
   researching: { label: "Researching", tone: "neutral" },
   applying: { label: "Applying", tone: "amber" },

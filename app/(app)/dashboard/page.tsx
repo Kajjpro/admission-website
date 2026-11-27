@@ -9,7 +9,7 @@ import { ReadinessPanel } from "./readiness-panel";
 import { nextDeadline } from "@/lib/universities";
 import { daysUntil, formatDate, formatDateTime } from "@/lib/utils";
 import { Badge, Card, CardHeader } from "@/components/ui";
-import type { CounselorTask, Essay, RoadmapTask, TaskStatus, University } from "@/lib/types";
+import type { CounselorTask, Essay, LetterStatus, RoadmapTask, TaskStatus, University } from "@/lib/types";
 import { getPracticeStats } from "@/lib/practice";
 import { TodayCard } from "@/components/practice/today-card";
 import { RoadmapChecklist } from "./roadmap-checklist";
@@ -25,7 +25,7 @@ export default async function DashboardPage() {
   const supabase = await createClient();
 
   const recentFeedback = new Date(Date.now() - 14 * 86_400_000).toISOString();
-  const [practice, tasks, progress, essays, scores, activities, recs, list, honors, assigned, feedback] = await Promise.all([
+  const [practice, tasks, progress, essays, scores, activities, recs, list, honors, assigned, feedback, letter] = await Promise.all([
     getPracticeStats(supabase, profile.id),
     supabase.from("roadmap_tasks").select("*").eq("grade_level", grade).order("sort_order"),
     supabase.from("user_task_progress").select("task_id, status").eq("user_id", profile.id),
@@ -41,6 +41,7 @@ export default async function DashboardPage() {
       .order("due_date", { ascending: true, nullsFirst: false }),
     supabase.from("profile_reviews").select("reviewed_at").eq("student_id", profile.id).eq("status", "reviewed")
       .gte("reviewed_at", recentFeedback).order("reviewed_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("counselor_letters").select("status").eq("student_id", profile.id).maybeSingle(),
   ]);
 
   const statusByTask = Object.fromEntries((progress.data ?? []).map((p) => [p.task_id, p.status as TaskStatus]));
@@ -50,14 +51,14 @@ export default async function DashboardPage() {
     essayReadiness(essayRows),
     testingReadiness(scores.data ?? [], profile),
     activityReadiness(activities.count ?? 0),
-    recReadiness(recs.data ?? []),
+    recReadiness(recs.data ?? [], (letter.data ?? null) as { status: LetterStatus } | null),
     profileReadiness({
       profile,
       scores: scores.data?.length ?? 0,
       activities: activities.count ?? 0,
       honors: honors.count ?? 0,
       essaysWithWords: essayRows.filter((e) => e.word_count > 0).length,
-      recommenders: recs.data?.length ?? 0,
+      recommenders: (recs.data?.length ?? 0) + (letter.data ? 1 : 0),
     }),
   ];
 

@@ -7,11 +7,11 @@ import { getPracticeStats } from "@/lib/practice";
 import { createClient } from "@/lib/supabase/server";
 import { nextDeadline, percent, satFit } from "@/lib/universities";
 import { daysUntil, formatDate, formatDateTime } from "@/lib/utils";
-import { APPLICATION_STATUS, RECOMMENDER_STATUS, REVIEW_STATUS } from "@/lib/constants";
+import { APPLICATION_STATUS, LETTER_STATUS, RECOMMENDER_STATUS, REVIEW_STATUS } from "@/lib/constants";
 import { startProfileReview } from "@/app/actions/counselor";
 import { Badge, Button, Card, CardHeader, buttonClass } from "@/components/ui";
 import { SnapshotView } from "@/components/profile/snapshot-view";
-import type { ApplicationStatus, CounselorTask, RecommenderStatus, ReviewStatus, University } from "@/lib/types";
+import type { ApplicationStatus, CounselorTask, LetterStatus, RecommenderStatus, ReviewStatus, University } from "@/lib/types";
 import { NotesPanel, TaskPanel } from "./student-client";
 
 export const metadata = { title: "Student" };
@@ -25,7 +25,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
   const { data: student } = await supabase.from("profiles").select("id, full_name, email, role").eq("id", id).eq("role", "student").maybeSingle();
   if (!student) notFound();
 
-  const [snapshot, stats, { data: essays }, { data: reviews }, { data: list }, { data: tasks }, { data: notes }, { data: recs }] = await Promise.all([
+  const [snapshot, stats, { data: essays }, { data: reviews }, { data: list }, { data: tasks }, { data: notes }, { data: recs }, { data: myLetter }] = await Promise.all([
     buildSnapshot(supabase, id),
     getPracticeStats(supabase, id),
     supabase.from("user_essays").select("id, title, review_status, submitted_at, meeting_at").eq("user_id", id).not("submitted_at", "is", null).order("submitted_at", { ascending: false }),
@@ -34,6 +34,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
     supabase.from("counselor_tasks").select("*").eq("student_id", id).order("created_at", { ascending: false }),
     supabase.from("counselor_notes").select("id, kind, body, created_at").eq("student_id", id).order("created_at", { ascending: false }),
     supabase.from("recommenders").select("id, teacher_name, subject, email, status, due_date, requested_at, viewed_at").eq("user_id", id).order("created_at"),
+    supabase.from("counselor_letters").select("id, status, due_date").eq("student_id", id).maybeSingle(),
   ]);
 
   const bestSat = snapshot.tests.find((t) => t.type === "SAT")?.best ?? null;
@@ -157,7 +158,19 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
           </Card>
 
           <Card>
-            <CardHeader title="Recommendation letters" />
+            <CardHeader title="Counsellor recommendation" />
+            {myLetter ? (
+              <Link href={`/counselor/letters/${myLetter.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50">
+                <span className="flex-1 text-sm">{myLetter.status === "done" ? "Letter finished" : "Open the letter workspace"}{myLetter.due_date && <span className="block text-xs text-slate-500">Needed by {formatDate(myLetter.due_date)}</span>}</span>
+                <Badge tone={LETTER_STATUS[myLetter.status as LetterStatus].tone}>{LETTER_STATUS[myLetter.status as LetterStatus].label}</Badge>
+              </Link>
+            ) : (
+              <p className="px-5 py-4 text-sm text-slate-500">The student hasn't asked for a counsellor letter yet.</p>
+            )}
+          </Card>
+
+          <Card>
+            <CardHeader title="Teacher letters" />
             {recs?.length ? (
               <ul className="divide-y divide-line">
                 {recs.map((r) => {

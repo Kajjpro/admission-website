@@ -19,7 +19,7 @@ export function RecommenderTracker({ recommenders, teachers, studentName }: { re
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader title="Recommenders" description="Most universities want two teachers plus your counsellor. Each teacher gets a private link to your brag sheet." />
+        <CardHeader title="Teacher letters (optional)" description="If a university also asks for a teacher letter, add the teacher here. They get a private link to your brag sheet." />
         <ul className="divide-y divide-line">
           {recommenders.map((r) => (
             <RecommenderRow key={r.id} rec={r} studentName={studentName} />
